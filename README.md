@@ -6,7 +6,7 @@ We are building a decision-support tool to help their Project Managers (PMs) fig
 Since iDISC has a ton of rules (schedules, language pairs, client quality demands), we decided against building a "black box" that assigns tasks automatically. 
 Instead, we are building an AI "Copilot" dashboard. It will calculate all the constraints and suggest the top 3 best translators for the job, letting the PM make the final click.
 
-**What we've done so far**
+**What we've done so far?**
 
 1. Design Thinking & ConceptWe used the 6-step Design Thinking framework to figure out what to actually build.
 We spent time trying to empathize with the PMs  and realized they are wasting time manually cross-referencing four different tables.
