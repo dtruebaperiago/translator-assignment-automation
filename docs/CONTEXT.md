@@ -7,8 +7,8 @@
 ## Completed Tasks
 - [x] Initial GitHub Classroom setup.
 
-## Current Blockers
+## Current Errors
 - None.
 
-## Next Step for AI
+## Next Step
 "Based on the folder structure, help us write a script to load the translation dataset located in /data."
