@@ -10,5 +10,3 @@
 ## Current Errors
 - None.
 
-## Next Step
-"Based on the folder structure, help us write a script to load the translation dataset located in /data."
