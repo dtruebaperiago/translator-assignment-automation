@@ -19,6 +19,7 @@ Normalization:
 import os
 import pickle
 import warnings
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ from sklearn.preprocessing import StandardScaler
 # CONFIGURATION
 # ──────────────────────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "..", "..", "DATA", "Implementation", "Processed")
+DATA_DIR = os.path.join(BASE_DIR, "..", "..", "..", "..", "DATA", "Processed")
 
 # Where to persist the .pt tensor files (optional, but handy)
 TENSOR_DIR = os.path.join(BASE_DIR, "tensors")
@@ -83,13 +84,17 @@ print(f"  Shared columns (present in both towers): {len(shared)}")
 
 
 def _is_skip_col(col: str) -> bool:
-    """Return True if a column should NOT be normalized."""
-    if col in SKIP_NORM_EXACT:
+    """Return True if a column should NOT be normalized.
+
+    Skips:
+    - Exact matches in SKIP_NORM_EXACT
+    - Any label-encoded column (suffix '_enc') — scaling ordinal
+      integer indices is semantically wrong for categorical features
+    - OHE columns matched by SKIP_NORM_PREFIXES
+    """
+    if col in SKIP_NORM_EXACT or col.endswith("_enc"):
         return True
-    for prefix in SKIP_NORM_PREFIXES:
-        if col.startswith(prefix):
-            return True
-    return False
+    return any(col.startswith(prefix) for prefix in SKIP_NORM_PREFIXES)
 
 
 # Identify which feature columns are continuous (need scaling)
@@ -110,8 +115,8 @@ print(f"  Tower B columns skipped (binary/OHE): {len(cat_cols_b)}")
 def build_tensors(
     df: pd.DataFrame,
     split_name: str,
-    scaler_a: StandardScaler | None = None,
-    scaler_b: StandardScaler | None = None,
+    scaler_a: Optional[StandardScaler] = None,
+    scaler_b: Optional[StandardScaler] = None,
     fit: bool = False,
 ):
     """
@@ -134,6 +139,13 @@ def build_tensors(
     scaler_a       : fitted StandardScaler for Tower A
     scaler_b       : fitted StandardScaler for Tower B
     """
+    # --- Guard: scalers must be provided when not fitting ------------------
+    if not fit:
+        assert scaler_a is not None and scaler_b is not None, (
+            f"build_tensors('{split_name}'): fitted scalers must be passed "
+            "when fit=False. Did you forget to run the train split first?"
+        )
+
     # --- Align columns: fill any missing tower column with 0 ---------------
     for col in tower_a_feature_cols + tower_b_feature_cols:
         if col not in df.columns:
