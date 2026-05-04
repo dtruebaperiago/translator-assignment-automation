@@ -8,13 +8,22 @@ Outputs per split:
   - tensor_tower_a   (N x F_a)  Translator / Employee features
   - tensor_tower_b   (N x F_b)  Task features
   - tensor_target    (N,)       AFFINITY_LABEL  (continuous 0-1)
+
+Normalization:
+  Standard scaling (z-score) is applied to continuous features only.
+  The scaler is fitted on the TRAINING set and applied to val/test
+  to prevent data leakage. Binary/OHE and label-encoded columns are
+  excluded from scaling.
 """
 
 import os
+import pickle
 import warnings
 
+import numpy as np
 import pandas as pd
 import torch
+from sklearn.preprocessing import StandardScaler
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -28,6 +37,15 @@ os.makedirs(TENSOR_DIR, exist_ok=True)
 
 # Identifiers that must NOT be fed as trainable features
 ID_COLUMNS = {"TASK_ID", "TRANSLATOR"}
+
+# Columns that should NOT be normalized (binary / one-hot / label-encoded)
+# OHE columns are 0/1 by construction; label-encoded IDs are categorical indices.
+SKIP_NORM_PREFIXES = ("SOURCE_LANG_", "TARGET_LANG_", "TASK_TYPE_")
+SKIP_NORM_EXACT = {
+    "IS_NEW_EMPLOYEE", "IS_SPECIALIST", "Works_Weekends",   # binary flags
+    "MANUFACTURER_enc", "MANUFACTURER_INDUSTRY_enc",        # label-encoded
+    "WILDCARD_enc",                                          # label-encoded
+}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STEP 1: Read tower CSVs (header only) to get column lists
@@ -64,19 +82,57 @@ shared = set(tower_a_feature_cols) & set(tower_b_feature_cols)
 print(f"  Shared columns (present in both towers): {len(shared)}")
 
 
+def _is_skip_col(col: str) -> bool:
+    """Return True if a column should NOT be normalized."""
+    if col in SKIP_NORM_EXACT:
+        return True
+    for prefix in SKIP_NORM_PREFIXES:
+        if col.startswith(prefix):
+            return True
+    return False
+
+
+# Identify which feature columns are continuous (need scaling)
+cont_cols_a = [c for c in tower_a_feature_cols if not _is_skip_col(c)]
+cont_cols_b = [c for c in tower_b_feature_cols if not _is_skip_col(c)]
+cat_cols_a  = [c for c in tower_a_feature_cols if _is_skip_col(c)]
+cat_cols_b  = [c for c in tower_b_feature_cols if _is_skip_col(c)]
+
+print(f"\n  Tower A continuous cols to normalize: {len(cont_cols_a)}")
+print(f"  Tower A columns skipped (binary/OHE): {len(cat_cols_a)}")
+print(f"  Tower B continuous cols to normalize: {len(cont_cols_b)}")
+print(f"  Tower B columns skipped (binary/OHE): {len(cat_cols_b)}")
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 #  Build tensors from a single merged DataFrame
 # ──────────────────────────────────────────────────────────────────────────────
-def build_tensors(df: pd.DataFrame, split_name: str):
+def build_tensors(
+    df: pd.DataFrame,
+    split_name: str,
+    scaler_a: StandardScaler | None = None,
+    scaler_b: StandardScaler | None = None,
+    fit: bool = False,
+):
     """
     Given a merged DataFrame that contains columns from both towers plus
     AFFINITY_LABEL, extract and return three float32 tensors.
+
+    Parameters
+    ----------
+    df          : merged DataFrame
+    split_name  : label for logging ("train", "val", "test")
+    scaler_a    : StandardScaler for Tower A continuous columns
+    scaler_b    : StandardScaler for Tower B continuous columns
+    fit         : if True, fit the scalers on this split (train only)
 
     Returns
     -------
     tensor_tower_a : torch.Tensor  (N x len(tower_a_feature_cols))
     tensor_tower_b : torch.Tensor  (N x len(tower_b_feature_cols))
     tensor_target  : torch.Tensor  (N,)
+    scaler_a       : fitted StandardScaler for Tower A
+    scaler_b       : fitted StandardScaler for Tower B
     """
     # --- Align columns: fill any missing tower column with 0 ---------------
     for col in tower_a_feature_cols + tower_b_feature_cols:
@@ -101,6 +157,21 @@ def build_tensors(df: pd.DataFrame, split_name: str):
     df_a = df_a.fillna(0)
     df_b = df_b.fillna(0)
 
+    # --- Normalize continuous features (Standard Scaling) ------------------
+    if cont_cols_a:
+        if fit:
+            scaler_a.fit(df_a[cont_cols_a])
+            print(f"    Fitted scaler_a on {len(cont_cols_a)} continuous columns")
+        df_a[cont_cols_a] = scaler_a.transform(df_a[cont_cols_a])
+
+    if cont_cols_b:
+        if fit:
+            scaler_b.fit(df_b[cont_cols_b])
+            print(f"    Fitted scaler_b on {len(cont_cols_b)} continuous columns")
+        df_b[cont_cols_b] = scaler_b.transform(df_b[cont_cols_b])
+
+    print(f"    Applied standard scaling to {split_name} continuous features")
+
     # --- Convert to float32 tensors ----------------------------------------
     tensor_tower_a = torch.tensor(df_a.values, dtype=torch.float32)
     tensor_tower_b = torch.tensor(df_b.values, dtype=torch.float32)
@@ -116,20 +187,26 @@ def build_tensors(df: pd.DataFrame, split_name: str):
     if tensor_target is not None:
         print(f"  {split_name} tensor_target  : {tensor_target.shape}")
 
-    return tensor_tower_a, tensor_tower_b, tensor_target
+    return tensor_tower_a, tensor_tower_b, tensor_target, scaler_a, scaler_b
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STEP 3-6 (TRAIN): Read train_merged.csv -> extract -> tensorise
 # ──────────────────────────────────────────────────────────────────────────────
 print("\n" + "=" * 70)
-print("STEP 3-6: Building TRAIN tensors")
+print("STEP 3-6: Building TRAIN tensors (fit scalers here)")
 print("=" * 70)
 
 train_df = pd.read_csv(os.path.join(DATA_DIR, "train_merged.csv"), low_memory=False)
 print(f"  Loaded train_merged.csv: {train_df.shape}")
 
-train_tower_a, train_tower_b, train_target = build_tensors(train_df, "train")
+# Initialize scalers — they will be fitted on the training set
+scaler_a = StandardScaler()
+scaler_b = StandardScaler()
+
+train_tower_a, train_tower_b, train_target, scaler_a, scaler_b = build_tensors(
+    train_df, "train", scaler_a=scaler_a, scaler_b=scaler_b, fit=True
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STEP 3-6 (VAL): Read val_merged.csv -> extract -> tensorise
@@ -141,7 +218,9 @@ print("=" * 70)
 val_df = pd.read_csv(os.path.join(DATA_DIR, "val_merged.csv"), low_memory=False)
 print(f"  Loaded val_merged.csv: {val_df.shape}")
 
-val_tower_a, val_tower_b, val_target = build_tensors(val_df, "val")
+val_tower_a, val_tower_b, val_target, _, _ = build_tensors(
+    val_df, "val", scaler_a=scaler_a, scaler_b=scaler_b, fit=False
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STEP 3-6 (TEST): Reconstruct merged test from tasks + translators + labels
@@ -174,7 +253,9 @@ with warnings.catch_warnings():
 
 print(f"  Loaded test set: {test_df.shape}")
 
-test_tower_a, test_tower_b, test_target = build_tensors(test_df, "test")
+test_tower_a, test_tower_b, test_target, _, _ = build_tensors(
+    test_df, "test", scaler_a=scaler_a, scaler_b=scaler_b, fit=False
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # OPTIONAL: Persist tensors to disk
@@ -195,7 +276,13 @@ torch.save(test_tower_a,  os.path.join(TENSOR_DIR, "test_tower_a.pt"))
 torch.save(test_tower_b,  os.path.join(TENSOR_DIR, "test_tower_b.pt"))
 torch.save(test_target,   os.path.join(TENSOR_DIR, "test_target.pt"))
 
-print(f"\n  All tensors saved to: {TENSOR_DIR}")
+# Persist the scalers so they can be reused at inference time
+with open(os.path.join(TENSOR_DIR, "scaler_a.pkl"), "wb") as f:
+    pickle.dump(scaler_a, f)
+with open(os.path.join(TENSOR_DIR, "scaler_b.pkl"), "wb") as f:
+    pickle.dump(scaler_b, f)
+
+print(f"\n  All tensors + scalers saved to: {TENSOR_DIR}")
 for f in sorted(os.listdir(TENSOR_DIR)):
     fpath = os.path.join(TENSOR_DIR, f)
     size_mb = os.path.getsize(fpath) / (1024 * 1024)
