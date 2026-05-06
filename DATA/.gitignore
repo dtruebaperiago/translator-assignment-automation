@@ -1,3 +1,7 @@
 Initial Dataset/CSV/*.csv
 Processed/*.csv
 Initial Dataset/XLSX/*.xlsx
+Clients.csv
+Schedules.csv
+TranslatorsCost+Pairs.csv
+Initial Dataset.xlsx

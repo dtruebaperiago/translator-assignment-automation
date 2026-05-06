@@ -1,17 +1,20 @@
 """
 main.py — AssignMate entry point
 =================================
-Loads a client-demand CSV plus the reference Excel workbook and runs the
-hard-constraint filtering pipeline defined in
+Loads a client-demand CSV and the reference CSVs from the DATA/ directory,
+then runs the hard-constraint filtering pipeline defined in
 ``backend/constraints/demand.py``.
 
 Quick start:
-    python backend/main.py --demands sample_demand.csv --excel data.xlsx
+    python backend/main.py --demands sample_demand.csv
 
 Optional arguments:
+    --data-dir DIR   Path to the DATA/ folder (default: DATA).
     --top N          Show only the top-N results per demand (default: all).
     --output FILE    Write qualified translators to a CSV file.
 """
+
+from __future__ import annotations
 
 import argparse
 import sys
@@ -26,7 +29,7 @@ from backend.constraints.demand import (
     load_demands,
     enrich_demands,
     filter_translators,
-    load_excel_sheets,
+    load_csv_data,
 )
 
 
@@ -41,34 +44,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to the client-demand CSV file.",
     )
     p.add_argument(
-        "--excel",
-        required=True,
-        help="Path to the iDISC reference Excel workbook (.xlsx).",
-    )
-    p.add_argument(
-        "--data-sheet",
-        default="Data",
-        help="Sheet name for the historical task data.",
-    )
-    p.add_argument(
-        "--schedules-sheet",
-        default="Schedules",
-        help="Sheet name for translator schedules.",
-    )
-    p.add_argument(
-        "--clients-sheet",
-        default="Clients",
-        help="Sheet name for client information.",
-    )
-    p.add_argument(
-        "--translator-pairs-sheet",
-        default="TranslatorsCost+Pairs",
-        help="Sheet name for translator pairs.",
-    )
-    p.add_argument(
-        "--manufacturer-col",
-        default="CLIENT_NAME",
-        help="Column in the Clients sheet that identifies the manufacturer.",
+        "--data-dir",
+        default="DATA",
+        help="Path to the DATA/ directory with reference CSVs.",
     )
     p.add_argument(
         "--top",
@@ -92,27 +70,23 @@ def main() -> None:
     demands: list[Demand] = load_demands(args.demands)
     print(f"      {len(demands)} demand(s) loaded.")
 
-    # 2. Load reference data
-    print(f"\n[2/3] Loading reference workbook: {args.excel}")
-    language_pairs_df, task_types_df, schedules_df, clients_df = load_excel_sheets(
-        args.excel,
-        data_sheet=args.data_sheet,
-        schedules_sheet=args.schedules_sheet,
-        clients_sheet=args.clients_sheet,
-        translator_pairs_sheet=args.translator_pairs_sheet,
+    # 2. Load reference CSVs
+    print(f"\n[2/3] Loading reference CSVs from: {args.data_dir}")
+    clients_df, schedules_df, pairs_df, translators_data_df = load_csv_data(
+        args.data_dir
     )
     print(
-        f"\tHistory Tasks: {len(task_types_df)} rows | "
-        f"\tSchedules: {len(schedules_df)} rows | "
         f"\tClients: {len(clients_df)} rows | "
-        f"\tTranslator Language Pairs: {len(language_pairs_df)} rows"
+        f"Schedules: {len(schedules_df)} rows | "
+        f"Language Pairs: {len(pairs_df)} rows | "
+        f"Translators Data: {len(translators_data_df)} rows"
     )
 
-    # Enrich demands with client-level data (selling price, min quality, wildcard)
-    enrich_demands(demands, clients_df, manufacturer_col=args.manufacturer_col)
+    # Enrich demands with client-level data
+    enrich_demands(demands, clients_df)
 
     # 3. Filter translators for each demand
-    print(f"\n[3/3] Filtering translators (hard constraints) …\n{'='*60}")
+    print(f"\n[3/3] Filtering translators (hard constraints)...\n{'='*60}")
 
     all_results: list[pd.DataFrame] = []
 
@@ -120,24 +94,26 @@ def main() -> None:
         print(f"\nDemand {idx}/{len(demands)}: {demand}")
 
         if demand.min_quality is not None:
-            print(f"  Client min quality : {demand.min_quality}")
+            print(f"  Client min quality  : {demand.min_quality}")
         if demand.selling_hourly_price is not None:
             print(f"  Selling hourly price: {demand.selling_hourly_price}")
         if demand.wildcard is not None:
-            print(f"  Wildcard           : {demand.wildcard}")
+            print(f"  Wildcard            : {demand.wildcard}")
 
-        qualified: pd.DataFrame = filter_translators(demand, language_pairs_df, task_types_df, schedules_df)
+        qualified: pd.DataFrame = filter_translators(
+            demand, pairs_df, translators_data_df, schedules_df
+        )
 
         if qualified.empty:
-            print("  → No translators passed the hard constraints for this demand.")
+            print("  -> No translators passed the hard constraints for this demand.")
             continue
 
         if args.top is not None:
             qualified = qualified.head(args.top)
 
-        print(f"  → {len(qualified)} translator(s) qualify:")
-        for name in qualified["NAME"].tolist():
-            print(f"       • {name}")
+        print(f"  -> {len(qualified)} translator(s) qualify:")
+        for name in qualified["TRANSLATOR"].tolist():
+            print(f"       * {name}")
 
         # Tag with demand index for output CSV
         qualified = qualified.copy()

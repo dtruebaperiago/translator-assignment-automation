@@ -2,19 +2,22 @@
 demand.py
 =========
 Reads a client-demand CSV, enriches each demand with data from the
-reference Excel workbook (Clients/Schedules sheet), and filters the full translator
-pool to only those who satisfy the three hard constraints:
+raw reference CSVs (Clients, Schedules, TranslatorsCost+Pairs) and the
+generated Translators_Data.csv, then filters the full translator pool
+to only those who satisfy the three hard constraints:
 
-    1. Language-pair match  – translator has worked source → target before.
+    1. Language-pair match  – translator has worked source -> target before.
     2. Task-type match      – translator has worked this task type before.
-    3. Schedule match       – translator is available on the day / at the time
-                              given by the demand's START field.
+    3. Schedule match       – translator has enough available hours in the
+                              [START, END] demand window.
 
 Usage (standalone):
-    python demand.py --demands demands.csv --excel data.xlsx --top 5
+    python demand.py --demands demands.csv --data-dir DATA
 
 Import usage (from main.py):
-    from backend.constraints.demand import load_demands, enrich_demands, filter_translators
+    from backend.constraints.demand import (
+        load_demands, enrich_demands, filter_translators, load_csv_data,
+    )
 """
 
 from __future__ import annotations
@@ -26,7 +29,7 @@ from typing import Optional
 import pandas as pd
 
 
-# Constants — column names expected in each sheet / CSV
+# ── Constants ────────────────────────────────────────────────────────────────
 
 # Columns that MUST be present in the client-demand CSV
 DEMAND_CSV_COLS = [
@@ -43,7 +46,6 @@ DEMAND_CSV_COLS = [
     "MANUFACTURER_SUBINDUSTRY",
 ]
 
-SCHEDULE_DOW_COLS = ["MON", "TUES", "WED", "THURS", "FRI", "SAT", "SUN"]
 # Mapping from Python weekday() integer to Schedules column name
 WEEKDAY_TO_COL = {
     0: "MON",
@@ -56,11 +58,12 @@ WEEKDAY_TO_COL = {
 }
 
 # Bias multiplier applied to the forecasted hours to give translators
-# extra buffer for unexpected problems (e.g. 1.5 → 50 % slack required).
+# extra buffer for unexpected problems (e.g. 1.5 -> 50 % slack required).
 AVAILABILITY_BIAS: float = 1.5
 
 
-# Dataclass
+# ── Dataclass ────────────────────────────────────────────────────────────────
+
 @dataclass
 class Demand:
     """A single client task demand."""
@@ -78,13 +81,12 @@ class Demand:
     manufacturer_industry: str
     manufacturer_subindustry: str
 
-    # From the Clients excel sheet (filled in by enrich_demands, None until then)
+    # From the Clients CSV (filled in by enrich_demands, None until then)
     selling_hourly_price: Optional[float] = field(default=None)
     min_quality: Optional[float] = field(default=None)
     wildcard: Optional[str] = field(default=None)
 
-
-    # Convenience helpers for times and prints
+    # Convenience helpers
     @property
     def day_of_week_col(self) -> str:
         """Return the Schedules column name for the demand's START weekday."""
@@ -97,26 +99,22 @@ class Demand:
 
     def __str__(self) -> str:
         return (
-            f"Demand({self.task_type}, {self.source_lang}→{self.target_lang}, "
+            f"Demand({self.task_type}, {self.source_lang}->{self.target_lang}, "
             f"start={self.start:%Y-%m-%d %H:%M}, hours={self.hours}h, "
             f"manufacturer={self.manufacturer})"
         )
 
 
+# ---------------------------------------------------------------------------
+# 1. Load demands from CSV
+# ---------------------------------------------------------------------------
 
-# 1. Load demands from CSV to convert to a list of the demands
 def load_demands(csv_path: str) -> list[Demand]:
     """
-    Read a CSV file and return a list of class "Demand" objects.
+    Read a CSV file and return a list of Demand objects.
 
     The CSV must contain (at minimum) the columns listed in
-    "DEMAND_CSV_COLS". Extra columns are ignored.
-
-    Input:
-    csv_path : str / Path to the client demand CSV file.
-
-    Output:
-    list[Demand] / List of Demand objects.
+    DEMAND_CSV_COLS. Extra columns are ignored.
     """
     df = pd.read_csv(csv_path, parse_dates=["START", "END"])
 
@@ -149,161 +147,174 @@ def load_demands(csv_path: str) -> list[Demand]:
     return demands
 
 
-# 2. Adds info to demands using Clients-sheet data
-def enrich_demands(demands: list[Demand], clients_df: pd.DataFrame, manufacturer_col: str = "MANUFACTURER") -> list[Demand]:
+# ---------------------------------------------------------------------------
+# 2. Enrich demands with client data from Clients.csv
+# ---------------------------------------------------------------------------
+
+def enrich_demands(
+    demands: list[Demand],
+    clients_df: pd.DataFrame,
+    manufacturer_col: str = "CLIENT_NAME",
+) -> list[Demand]:
     """
-    Add ``SELLING_HOURLY_PRICE``, ``MIN_QUALITY``, and ``WILDCARD`` to each
-    demand by looking up the demand's manufacturer in the Clients sheet.
+    Add SELLING_HOURLY_PRICE, MIN_QUALITY, and WILDCARD to each demand
+    by looking up the demand's manufacturer in the Clients CSV.
 
-    Input:
-    demands : list[Demand] / Demands produced by :func:`load_demands`.
-    clients_df : pd.DataFrame / The Clients sheet loaded from the reference Excel workbook.
-    manufacturer_col : str / Name of the manufacturer-identifier column in the Clients sheet.
-
-    Output:
-    list[Demand] / The same list, mutated in place (also returned for convenience).
+    The Clients CSV maps CLIENT_NAME -> {SELLING_HOURLY_PRICE, MIN_QUALITY, WILDCARD}.
     """
-    # Normalise column names to uppercase for robustness
-    clients_df = clients_df.copy()
-    clients_df.columns = [c.strip().upper() for c in clients_df.columns]
-    manufacturer_col = manufacturer_col.upper()
+    df = clients_df.copy()
+    df.columns = [c.strip() for c in df.columns]
 
-    if manufacturer_col not in clients_df.columns:
+    if manufacturer_col not in df.columns:
         raise ValueError(
-            f"Clients sheet does not contain a '{manufacturer_col}' column. "
-            f"Available columns: {list(clients_df.columns)}"
+            f"Clients CSV does not contain a '{manufacturer_col}' column. "
+            f"Available columns: {list(df.columns)}"
         )
 
-    # Build a lookup dict: manufacturer → {col: value}
-    lookup = (
-        clients_df.set_index(manufacturer_col)
-        .to_dict(orient="index")
-    )
+    # Build lookup: manufacturer name -> {col: value}
+    lookup = df.set_index(manufacturer_col).to_dict(orient="index")
 
     for demand in demands:
         client_row = lookup.get(demand.manufacturer, {})
         demand.selling_hourly_price = client_row.get("SELLING_HOURLY_PRICE")
         demand.min_quality = client_row.get("MIN_QUALITY")
         demand.wildcard = client_row.get("WILDCARD")
-        
 
     return demands
 
 
+# ---------------------------------------------------------------------------
 # 3. Filter translators (hard constraints)
-def filter_translators(demand: Demand, language_pairs_df: pd.DataFrame, task_types_df: pd.DataFrame, schedules_df: pd.DataFrame) -> pd.DataFrame:
+# ---------------------------------------------------------------------------
+
+def filter_translators(
+    demand: Demand,
+    pairs_df: pd.DataFrame,
+    translators_data_df: pd.DataFrame,
+    schedules_df: pd.DataFrame,
+) -> pd.DataFrame:
     """
-    Return the subset of translators who satisfy all (three) hard
-    constraints for the given demand.
+    Return the subset of translators who satisfy all three hard constraints.
 
     Hard constraints:
-    1. Language-pair match — translator has previously worked on at least
-       one task with the same SOURCE_LANG and TARGET_LANG.
-    2. Task-type match — translator has previously worked on at least one
-       task of the same TASK_TYPE.
-    3. Schedule match — the translator works on the weekday of
-       ``demand.start`` and their shift window [START, END] covers the
-       demand's start time.
+    1. Language-pair match -- translator has a row in TranslatorsCost+Pairs
+       with matching SOURCE_LANG and TARGET_LANG.
+    2. Task-type match -- translator's task_types_worked column in
+       Translators_Data.csv contains the demand's TASK_TYPE.
+    3. Capacity check -- translator has enough available hours in the
+       [demand.start, demand.end] window (using raw schedule shifts):
+       available_hours >= demand.hours * AVAILABILITY_BIAS
 
-    Input:
-    demand : Demand / The client demand to evaluate.
-    language_pairs_df : pd.DataFrame / The company's historical data sheet with all languages pairs done in columns:
-        ``TRANSLATOR``, ``SOURCE_LANG``, ``TARGET_LANG``.
-    task_types_df : pd.DataFrame / The company's historical data sheet with all tasks and it's type done in columns:
-        ``TRANSLATOR``, ``TASK_TYPE``.
-    schedules_df : pd.DataFrame / The company's schedules sheet with columns:
-        ``NAME``, ``START``, ``END``, ``MON``, ``TUES``, ``WED``,
-        ``THURS``, ``FRI``, ``SAT``, ``SUN``.
+    Parameters
+    ----------
+    demand : Demand
+    pairs_df : pd.DataFrame
+        TranslatorsCost+Pairs.csv with columns:
+        TRANSLATOR, SOURCE_LANG, TARGET_LANG, HOURLY_RATE.
+    translators_data_df : pd.DataFrame
+        Translators_Data.csv with columns:
+        TRANSLATOR, task_types_worked, rolling features, flags.
+    schedules_df : pd.DataFrame
+        Schedules.csv with columns:
+        NAME, START, END, MON, TUES, WED, THURS, FRI, SAT, SUN.
 
-    Output:
-    pd.DataFrame / A filtered version of ``schedules_df`` (so each row represents one
-        qualified translator)
+    Returns
+    -------
+    pd.DataFrame
+        Rows from translators_data_df for translators that passed all constraints,
+        merged with their schedule info.
     """
 
-    # --- Normalise column names ---
-    language_pairs_df = language_pairs_df.copy()
-    language_pairs_df.columns = [c.strip().upper() for c in language_pairs_df.columns]
-
-    task_types_df = task_types_df.copy()
-    task_types_df.columns = [c.strip().upper() for c in task_types_df.columns]
-
-    schedules_df = schedules_df.copy()
-    schedules_df.columns = [c.strip().upper() for c in schedules_df.columns]
-
-    # Convert schedule START / END to datetime.time objects
-    schedules_df["_START_TIME"] = schedules_df["START"].apply(_parse_time)
-    schedules_df["_END_TIME"] = schedules_df["END"].apply(_parse_time)
-
-    # Constraints 1 & 2: language pair + task type (from the company's history)
-    lang_pair_mask = (
-        (language_pairs_df["SOURCE_LANG"].str.strip() == demand.source_lang)
-        & (language_pairs_df["TARGET_LANG"].str.strip() == demand.target_lang)
+    # --- Constraint 1: Language-pair match (from TranslatorsCost+Pairs) ---
+    lang_mask = (
+        (pairs_df["SOURCE_LANG"].str.strip() == demand.source_lang)
+        & (pairs_df["TARGET_LANG"].str.strip() == demand.target_lang)
     )
-    task_type_mask = task_types_df["TASK_TYPE"].str.strip() == demand.task_type
+    translators_lang = set(
+        pairs_df.loc[lang_mask, "TRANSLATOR"].str.strip().unique()
+    )
 
-    # Translators who satisfy BOTH constraints (intersection)
-    translators_lang = set(language_pairs_df.loc[lang_pair_mask, "TRANSLATOR"].str.strip().unique())
-    translators_task = set(task_types_df.loc[task_type_mask, "TRANSLATOR"].str.strip().unique())
+    if not translators_lang:
+        print(
+            f"[filter] No translators found for language pair "
+            f"'{demand.source_lang}->{demand.target_lang}'."
+        )
+        return pd.DataFrame(columns=["TRANSLATOR"])
+
+    # --- Constraint 2: Task-type match (from Translators_Data.csv) ---
+    task_mask = translators_data_df["task_types_worked"].apply(
+        lambda x: demand.task_type in str(x).split(",")
+    )
+    translators_task = set(
+        translators_data_df.loc[task_mask, "TRANSLATOR"].str.strip().unique()
+    )
+
+    if not translators_task:
+        print(
+            f"[filter] No translators found with task type "
+            f"'{demand.task_type}'."
+        )
+        return pd.DataFrame(columns=["TRANSLATOR"])
+
+    # Intersection: must satisfy BOTH constraints 1 & 2
     qualified_from_history = translators_lang & translators_task
 
     if not qualified_from_history:
         print(
-            f"[filter_translators] No translators found for language pair "
-            f"'{demand.source_lang}→{demand.target_lang}' and task type "
-            f"'{demand.task_type}'."
+            f"[filter] No translators found for "
+            f"'{demand.source_lang}->{demand.target_lang}' AND "
+            f"task type '{demand.task_type}'."
         )
-        return pd.DataFrame(columns=schedules_df.columns)
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
-    # Constraint 3: enough capacity in the [START, END] window
-    #
-    # For each translator, sum the working hours that fall inside the
-    # demand window (START → END), then require:
-    #
-    #   total_available_hours  >=  demand.hours * AVAILABILITY_BIAS
-    #
-    # The bias (default 1.5) adds a 50 % time buffer so the translator
-    # can handle unexpected problems without being overloaded.
+    print(
+        f"  [C1+C2] {len(qualified_from_history)} translator(s) match "
+        f"lang pair + task type."
+    )
 
+    # --- Constraint 3: Schedule capacity check ---
     required_hours = demand.hours * AVAILABILITY_BIAS
 
-    # Keep only translators from history that appear in Schedules
+    # Filter schedules to only qualified translators
     sched_filtered = schedules_df[
         schedules_df["NAME"].str.strip().isin(qualified_from_history)
     ].copy()
 
     if sched_filtered.empty:
-        print(
-            "[filter_translators] History-qualified translators have no "
-            "schedule entries — cannot verify availability."
-        )
-        return pd.DataFrame(columns=schedules_df.columns)
+        print("[filter] No schedule entries for history-qualified translators.")
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
-    # Parse shift times once (needed by _compute_available_hours)
+    # Parse shift START/END to time objects
     sched_filtered["_START_TIME"] = sched_filtered["START"].apply(_parse_time)
     sched_filtered["_END_TIME"] = sched_filtered["END"].apply(_parse_time)
 
+    # Compute available hours for each translator in the demand window
     sched_filtered["_AVAILABLE_HOURS"] = sched_filtered.apply(
         lambda row: _compute_available_hours(row, demand.start, demand.end),
         axis=1,
     )
 
     available_mask = sched_filtered["_AVAILABLE_HOURS"] >= required_hours
+    available_names = set(
+        sched_filtered.loc[available_mask, "NAME"].str.strip().unique()
+    )
 
-    result = sched_filtered[available_mask].copy()
-
-    # Drop internal helper columns
-    result = result.drop(columns=["_START_TIME", "_END_TIME", "_AVAILABLE_HOURS"], errors="ignore")
-
-    if result.empty:
+    if not available_names:
         print(
-            f"[filter_translators] No translators have enough capacity "
-            f"(need {required_hours:.1f} h = {demand.hours} h × {AVAILABILITY_BIAS} bias)."
+            f"  [C3] No translators have enough capacity "
+            f"(need {required_hours:.1f}h = {demand.hours}h x {AVAILABILITY_BIAS} bias)."
         )
-    else:
-        print(
-            f"[filter_translators] {len(result)} translator(s) passed all hard "
-            f"constraints for demand: {demand}"
-        )
+        return pd.DataFrame(columns=["TRANSLATOR"])
+
+    # Build final result: translators_data rows for available translators
+    result = translators_data_df[
+        translators_data_df["TRANSLATOR"].str.strip().isin(available_names)
+    ].copy()
+
+    print(
+        f"  [C3] {len(result)} translator(s) passed all hard constraints "
+        f"for demand: {demand}"
+    )
 
     return result.reset_index(drop=True)
 
@@ -319,30 +330,15 @@ def _compute_available_hours(
 ) -> float:
     """
     Sum the working hours a translator has available between
-    ``demand_start`` and ``demand_end``.
+    demand_start and demand_end using raw schedule data.
 
     Uses the translator's weekly schedule (MON–SUN binary columns +
-    shift START / END time columns).  Handles partial first / last days:
+    shift START / END time columns). Handles partial first / last days:
     only the overlap between the translator's shift and the demand window
     on each date is counted.
-
-    Parameters
-    ----------
-    row : pd.Series
-        One row from the Schedules DataFrame (already has ``_START_TIME``
-        and ``_END_TIME`` as :class:`datetime.time` objects).
-    demand_start : datetime
-        Task start (date + time).
-    demand_end : datetime
-        Task deadline (date + time).
-
-    Returns
-    -------
-    float
-        Total available hours in the demand window.
     """
     shift_start: time = row["_START_TIME"]
-    shift_end: time   = row["_END_TIME"]
+    shift_end: time = row["_END_TIME"]
 
     total_hours = 0.0
     current_date = demand_start.date()
@@ -351,15 +347,15 @@ def _compute_available_hours(
     while current_date <= end_date:
         dow_col = WEEKDAY_TO_COL[current_date.weekday()]
 
-        # Translator must work this weekday
+        # Translator must work this weekday (column value == 1)
         if int(row.get(dow_col, 0)) == 1:
-            # Build the translator's working window for this specific day
+            # Build working window for this specific day
             day_work_start = datetime.combine(current_date, shift_start)
-            day_work_end   = datetime.combine(current_date, shift_end)
+            day_work_end = datetime.combine(current_date, shift_end)
 
-            # Clamp to the demand window so partial first/last days are correct
+            # Clamp to the demand window
             overlap_start = max(day_work_start, demand_start)
-            overlap_end   = min(day_work_end,   demand_end)
+            overlap_end = min(day_work_end, demand_end)
 
             if overlap_end > overlap_start:
                 total_hours += (overlap_end - overlap_start).total_seconds() / 3600.0
@@ -371,13 +367,9 @@ def _compute_available_hours(
 
 def _parse_time(value) -> time:
     """
-    Convert a schedule start/end value to a :class:`datetime.time` object.
+    Convert a schedule start/end value to a datetime.time object.
 
-    Handles:
-    - ``datetime.time`` objects (already correct)
-    - ``datetime.datetime`` objects (extract ``.time()``)
-    - ``str`` in "HH:MM" or "HH:MM:SS" format
-    - ``pd.Timestamp``
+    Handles: datetime.time, datetime.datetime, pd.Timestamp, str "HH:MM:SS".
     """
     if isinstance(value, time):
         return value
@@ -389,52 +381,67 @@ def _parse_time(value) -> time:
     value = str(value).strip()
     parts = value.split(":")
     if len(parts) >= 2:
-        return time(int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0)
+        return time(int(parts[0]), int(parts[1]),
+                     int(parts[2]) if len(parts) > 2 else 0)
     raise ValueError(f"Cannot parse time value: {value!r}")
 
 
-# Convenience: load everything from an Excel workbook in one call
-def load_excel_sheets(excel_path: str, data_sheet: str = "Data", schedules_sheet: str = "Schedules", clients_sheet: str = "Clients", translator_pairs_sheet: str = "TranslatorsCost+Pairs") -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+# ---------------------------------------------------------------------------
+# Load all reference CSVs in one call
+# ---------------------------------------------------------------------------
+
+def load_csv_data(
+    data_dir: str,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Load the three main sheets from the iDISC Excel workbook.
+    Load the four reference CSV files from the DATA directory.
+
+    Parameters
+    ----------
+    data_dir : str
+        Path to the DATA/ directory containing the CSVs.
 
     Returns
     -------
-    (language_pairs_df, task_types_df, schedules_df, clients_df)
+    (clients_df, schedules_df, pairs_df, translators_data_df)
     """
-    xl = pd.ExcelFile(excel_path)
-    language_pairs_df = xl.parse(translator_pairs_sheet)
-    task_types_df = xl.parse(data_sheet)
-    schedules_df = xl.parse(schedules_sheet)
-    clients_df = xl.parse(clients_sheet)
-    return language_pairs_df, task_types_df, schedules_df, clients_df
+    import os
+
+    # Raw CSVs use semicolon separator, comma decimal
+    clients_path = os.path.join(data_dir, "Clients.csv")
+    schedules_path = os.path.join(data_dir, "Schedules.csv")
+    pairs_path = os.path.join(data_dir, "TranslatorsCost+Pairs.csv")
+    # Generated CSV uses standard comma separator
+    translators_data_path = os.path.join(data_dir, "Processed", "Translators_Data.csv")
+
+    print(f"  Loading Clients from:              {clients_path}")
+    clients_df = pd.read_csv(clients_path, sep=";", decimal=",", encoding="utf-8")
+    clients_df = clients_df.loc[:, ~clients_df.columns.str.startswith("Unnamed")]
+
+    print(f"  Loading Schedules from:            {schedules_path}")
+    schedules_df = pd.read_csv(schedules_path, sep=";", decimal=",", encoding="utf-8")
+
+    print(f"  Loading TranslatorsCost+Pairs from:{pairs_path}")
+    pairs_df = pd.read_csv(pairs_path, sep=";", decimal=",", encoding="utf-8")
+
+    print(f"  Loading Translators_Data from:     {translators_data_path}")
+    translators_data_df = pd.read_csv(translators_data_path)
+
+    return clients_df, schedules_df, pairs_df, translators_data_df
 
 
-# CLI entry point (for quick testing)
+# ---------------------------------------------------------------------------
+# CLI entry point (for quick standalone testing)
+# ---------------------------------------------------------------------------
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Filter translators against a client demand CSV."
+        description="Filter translators against a client demand CSV (CSV mode)."
     )
-    p.add_argument("--demands", required=True, help="Path to the client-demand CSV file.")
-    p.add_argument("--excel", required=True, help="Path to the iDISC reference Excel workbook.")
-    p.add_argument(
-        "--data-sheet", default="Data", help="Name of the historical data sheet (default: Data)."
-    )
-    p.add_argument(
-        "--schedules-sheet",
-        default="Schedules",
-        help="Name of the schedules sheet (default: Schedules).",
-    )
-    p.add_argument(
-        "--clients-sheet",
-        default="Clients",
-        help="Name of the clients sheet (default: Clients).",
-    )
-    p.add_argument(
-        "--manufacturer-col",
-        default="MANUFACTURER",
-        help="Column in the Clients sheet that identifies the manufacturer (default: MANUFACTURER).",
-    )
+    p.add_argument("--demands", required=True,
+                   help="Path to the client-demand CSV file.")
+    p.add_argument("--data-dir", default="DATA",
+                   help="Path to the DATA/ directory with reference CSVs.")
     return p
 
 
@@ -443,34 +450,25 @@ def main() -> None:
 
     print(f"Loading demands from: {args.demands}")
     demands = load_demands(args.demands)
-    print(f"  → {len(demands)} demand(s) loaded.\n")
+    print(f"  -> {len(demands)} demand(s) loaded.\n")
 
-    print(f"Loading reference data from: {args.excel}")
-    history_df, schedules_df, clients_df = load_excel_sheets(
-        args.excel,
-        data_sheet=args.data_sheet,
-        schedules_sheet=args.schedules_sheet,
-        clients_sheet=args.clients_sheet,
-    )
-    print(
-        f"  → History rows: {len(history_df)}, "
-        f"Schedules rows: {len(schedules_df)}, "
-        f"Clients rows: {len(clients_df)}\n"
+    print("Loading reference CSVs...")
+    clients_df, schedules_df, pairs_df, translators_data_df = load_csv_data(
+        args.data_dir
     )
 
-    # Adds info to demands using Clients-sheet data
-    enrich_demands(demands, clients_df, manufacturer_col=args.manufacturer_col)
+    enrich_demands(demands, clients_df)
 
-    # Filter translators for each demand
     for i, demand in enumerate(demands, start=1):
-        print(f"=== Demand {i}/{len(demands)}: {demand} ===")
-        qualified = filter_translators(demand, history_df, schedules_df)
+        print(f"\n=== Demand {i}/{len(demands)}: {demand} ===")
+        qualified = filter_translators(
+            demand, pairs_df, translators_data_df, schedules_df
+        )
         if qualified.empty:
-            print("  No qualified translators.\n")
+            print("  No qualified translators.")
         else:
             print(f"  Qualified translators ({len(qualified)}):")
-            print(qualified[["NAME"]].to_string(index=False))
-            print()
+            print(qualified["TRANSLATOR"].to_string(index=False))
 
 
 if __name__ == "__main__":
