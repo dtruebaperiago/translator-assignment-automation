@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Optional
 import pandas as pd
 
@@ -54,6 +54,10 @@ WEEKDAY_TO_COL = {
     5: "SAT",
     6: "SUN",
 }
+
+# Bias multiplier applied to the forecasted hours to give translators
+# extra buffer for unexpected problems (e.g. 1.5 → 50 % slack required).
+AVAILABILITY_BIAS: float = 1.5
 
 
 # Dataclass
@@ -250,9 +254,17 @@ def filter_translators(demand: Demand, language_pairs_df: pd.DataFrame, task_typ
         )
         return pd.DataFrame(columns=schedules_df.columns)
 
-    # Constraint 3: schedule availability
-    dow_col = demand.day_of_week_col
-    demand_start_time = demand.start_time
+    # Constraint 3: enough capacity in the [START, END] window
+    #
+    # For each translator, sum the working hours that fall inside the
+    # demand window (START → END), then require:
+    #
+    #   total_available_hours  >=  demand.hours * AVAILABILITY_BIAS
+    #
+    # The bias (default 1.5) adds a 50 % time buffer so the translator
+    # can handle unexpected problems without being overloaded.
+
+    required_hours = demand.hours * AVAILABILITY_BIAS
 
     # Keep only translators from history that appear in Schedules
     sched_filtered = schedules_df[
@@ -266,28 +278,27 @@ def filter_translators(demand: Demand, language_pairs_df: pd.DataFrame, task_typ
         )
         return pd.DataFrame(columns=schedules_df.columns)
 
-    # The translator must:
-    #   a) Work on the demand's weekday (column value == 1)
-    #   b) Demand start time falls within [shift start, shift end]
-    if dow_col not in sched_filtered.columns:
-        raise ValueError(
-            f"Schedules sheet does not have a column '{dow_col}'. "
-            f"Available columns: {list(sched_filtered.columns)}"
-        )
+    # Parse shift times once (needed by _compute_available_hours)
+    sched_filtered["_START_TIME"] = sched_filtered["START"].apply(_parse_time)
+    sched_filtered["_END_TIME"] = sched_filtered["END"].apply(_parse_time)
 
-    available_mask = (
-        (sched_filtered[dow_col].astype(int) == 1)
-        & (sched_filtered["_START_TIME"] <= demand_start_time)
-        & (sched_filtered["_END_TIME"] >= demand_start_time)
+    sched_filtered["_AVAILABLE_HOURS"] = sched_filtered.apply(
+        lambda row: _compute_available_hours(row, demand.start, demand.end),
+        axis=1,
     )
+
+    available_mask = sched_filtered["_AVAILABLE_HOURS"] >= required_hours
 
     result = sched_filtered[available_mask].copy()
 
     # Drop internal helper columns
-    result = result.drop(columns=["_START_TIME", "_END_TIME"], errors="ignore")
+    result = result.drop(columns=["_START_TIME", "_END_TIME", "_AVAILABLE_HOURS"], errors="ignore")
 
     if result.empty:
-        print("[filter_translators] No translators available at the demanded time.")
+        print(
+            f"[filter_translators] No translators have enough capacity "
+            f"(need {required_hours:.1f} h = {demand.hours} h × {AVAILABILITY_BIAS} bias)."
+        )
     else:
         print(
             f"[filter_translators] {len(result)} translator(s) passed all hard "
@@ -297,7 +308,66 @@ def filter_translators(demand: Demand, language_pairs_df: pd.DataFrame, task_typ
     return result.reset_index(drop=True)
 
 
+# ---------------------------------------------------------------------------
 # Helpers
+# ---------------------------------------------------------------------------
+
+def _compute_available_hours(
+    row: pd.Series,
+    demand_start: datetime,
+    demand_end: datetime,
+) -> float:
+    """
+    Sum the working hours a translator has available between
+    ``demand_start`` and ``demand_end``.
+
+    Uses the translator's weekly schedule (MON–SUN binary columns +
+    shift START / END time columns).  Handles partial first / last days:
+    only the overlap between the translator's shift and the demand window
+    on each date is counted.
+
+    Parameters
+    ----------
+    row : pd.Series
+        One row from the Schedules DataFrame (already has ``_START_TIME``
+        and ``_END_TIME`` as :class:`datetime.time` objects).
+    demand_start : datetime
+        Task start (date + time).
+    demand_end : datetime
+        Task deadline (date + time).
+
+    Returns
+    -------
+    float
+        Total available hours in the demand window.
+    """
+    shift_start: time = row["_START_TIME"]
+    shift_end: time   = row["_END_TIME"]
+
+    total_hours = 0.0
+    current_date = demand_start.date()
+    end_date = demand_end.date()
+
+    while current_date <= end_date:
+        dow_col = WEEKDAY_TO_COL[current_date.weekday()]
+
+        # Translator must work this weekday
+        if int(row.get(dow_col, 0)) == 1:
+            # Build the translator's working window for this specific day
+            day_work_start = datetime.combine(current_date, shift_start)
+            day_work_end   = datetime.combine(current_date, shift_end)
+
+            # Clamp to the demand window so partial first/last days are correct
+            overlap_start = max(day_work_start, demand_start)
+            overlap_end   = min(day_work_end,   demand_end)
+
+            if overlap_end > overlap_start:
+                total_hours += (overlap_end - overlap_start).total_seconds() / 3600.0
+
+        current_date += timedelta(days=1)
+
+    return total_hours
+
 
 def _parse_time(value) -> time:
     """
