@@ -369,9 +369,7 @@ def _parse_time(value) -> time:
     """
     Convert a schedule start/end value to a datetime.time object.
 
-    Handles: datetime.time, datetime.datetime, pd.Timestamp,
-             str "HH:MM:SS", and str "1900-01-01 03:00:00" (Excel artefact
-             for overnight shifts).
+    Handles: datetime.time, datetime.datetime, pd.Timestamp, str "HH:MM:SS".
     """
     if isinstance(value, time):
         return value
@@ -379,12 +377,8 @@ def _parse_time(value) -> time:
         return value.time()
     if isinstance(value, pd.Timestamp):
         return value.time()
-    # String fallback — try pd.to_datetime first (handles '1900-01-01 HH:MM:SS')
+    # String fallback
     value = str(value).strip()
-    try:
-        return pd.to_datetime(value).time()
-    except Exception:
-        pass
     parts = value.split(":")
     if len(parts) >= 2:
         return time(int(parts[0]), int(parts[1]),
