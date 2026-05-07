@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./Backend/constraints",
+        "./Backend/algorithms/Dual-Tower MLP/Architecture"
+    ]
+}
