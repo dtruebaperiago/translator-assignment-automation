@@ -3,7 +3,8 @@ main.py — AssignMate entry point
 =================================
 Loads a client-demand CSV and the reference CSVs from the DATA/ directory,
 then runs the hard-constraint filtering pipeline defined in
-``backend/constraints/demand.py``.
+``backend/constraints/demand.py`` and the client-constraint filter
+from ``backend/constraints/client.py``.
 
 Quick start:
     python backend/main.py --demands sample_demand.csv
@@ -31,6 +32,7 @@ from backend.constraints.demand import (
     filter_translators,
     load_csv_data,
 )
+from backend.constraints.client import filter_by_client_constraints
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -66,12 +68,12 @@ def main() -> None:
     args = build_parser().parse_args()
 
     # 1. Load demands
-    print(f"\n[1/3] Loading demands from: {args.demands}")
+    print(f"\n[1/4] Loading demands from: {args.demands}")
     demands: list[Demand] = load_demands(args.demands)
     print(f"      {len(demands)} demand(s) loaded.")
 
     # 2. Load reference CSVs
-    print(f"\n[2/3] Loading reference CSVs from: {args.data_dir}")
+    print(f"\n[2/4] Loading reference CSVs from: {args.data_dir}")
     clients_df, schedules_df, pairs_df, translators_data_df = load_csv_data(
         args.data_dir
     )
@@ -85,8 +87,11 @@ def main() -> None:
     # Enrich demands with client-level data
     enrich_demands(demands, clients_df)
 
-    # 3. Filter translators for each demand
-    print(f"\n[3/3] Filtering translators (hard constraints)...\n{'='*60}")
+    # 3. Hard-constraint filter (demand.py)
+    # 4. Client-constraint filter (client.py)
+    print(f"\n[3/4] Hard-constraint filter (demand.py)")
+    print(f"[4/4] Client-constraint filter (client.py)")
+    print(f"{'='*60}")
 
     all_results: list[pd.DataFrame] = []
 
@@ -100,12 +105,23 @@ def main() -> None:
         if demand.wildcard is not None:
             print(f"  Wildcard            : {demand.wildcard}")
 
-        qualified: pd.DataFrame = filter_translators(
+        # Step 3: Hard constraints (language pair, task type, capacity)
+        passed_all, passed_c1c2_only = filter_translators(
             demand, pairs_df, translators_data_df, schedules_df
         )
 
+        if passed_all.empty and passed_c1c2_only.empty:
+            print("  -> No translators passed the hard constraints.")
+            continue
+
+        # Step 4: Client constraints (quality, price, deadline relaxation)
+        qualified = filter_by_client_constraints(
+            demand, passed_all, passed_c1c2_only,
+            pairs_df, translators_data_df, schedules_df,
+        )
+
         if qualified.empty:
-            print("  -> No translators passed the hard constraints for this demand.")
+            print("  -> No translators passed the client constraints.")
             continue
 
         if args.top is not None:
