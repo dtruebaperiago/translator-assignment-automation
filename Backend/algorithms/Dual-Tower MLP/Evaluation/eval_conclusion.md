@@ -11,8 +11,8 @@ This behavior actually proves that our Hard Constraints filter is highly effecti
 
 However, because these scores are so  compressed, the final ranking suffers from noise—it struggles to break ties between very identical candidates. This perfectly explains our Hit Rate@5 of 2.32%.
 
-![alt text](image.png)
-![alt text](newplot.png)
+![alt text](glob_analytics_(3)_first.png)
+![alt text](affinity_(3)_first.png)
 
 2. Contextualizing the Results
 To understand the efficacy of the model, we must compare it against the Random Baseline:
