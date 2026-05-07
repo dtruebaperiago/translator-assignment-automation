@@ -192,9 +192,9 @@ def filter_translators(
     pairs_df: pd.DataFrame,
     translators_data_df: pd.DataFrame,
     schedules_df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     """
-    Return the subset of translators who satisfy the hard constraints.
+    Return the subset of translators who satisfy all three hard constraints.
 
     Hard constraints:
     1. Language-pair match -- translator has a row in TranslatorsCost+Pairs
@@ -220,13 +220,10 @@ def filter_translators(
 
     Returns
     -------
-    (passed_all, passed_c1c2_only) : tuple[pd.DataFrame, pd.DataFrame]
-        passed_all        : translators that passed all 3 constraints.
-        passed_c1c2_only  : translators that passed C1+C2 but FAILED C3
-                            (used by client.py to re-evaluate with relaxed
-                            deadline bias when wildcard == 'Deadline').
+    pd.DataFrame
+        Rows from translators_data_df for translators that passed all constraints,
+        merged with their schedule info.
     """
-    empty = pd.DataFrame(columns=["TRANSLATOR"])
 
     # --- Constraint 1: Language-pair match (from TranslatorsCost+Pairs) ---
     lang_mask = (
@@ -242,7 +239,7 @@ def filter_translators(
             f"[filter] No translators found for language pair "
             f"'{demand.source_lang}->{demand.target_lang}'."
         )
-        return empty, empty
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
     # --- Constraint 2: Task-type match (from Translators_Data.csv) ---
     task_mask = translators_data_df["task_types_worked"].apply(
@@ -257,7 +254,7 @@ def filter_translators(
             f"[filter] No translators found with task type "
             f"'{demand.task_type}'."
         )
-        return empty, empty
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
     # Intersection: must satisfy BOTH constraints 1 & 2
     qualified_from_history = translators_lang & translators_task
@@ -268,7 +265,7 @@ def filter_translators(
             f"'{demand.source_lang}->{demand.target_lang}' AND "
             f"task type '{demand.task_type}'."
         )
-        return empty, empty
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
     print(
         f"  [C1+C2] {len(qualified_from_history)} translator(s) match "
@@ -285,48 +282,48 @@ def filter_translators(
 
     if sched_filtered.empty:
         print("[filter] No schedule entries for history-qualified translators.")
-        return empty, empty
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
     # Parse shift START/END to time objects
-    sched_filtered["_START_TIME"] = sched_filtered["START"].apply(parse_time)
-    sched_filtered["_END_TIME"] = sched_filtered["END"].apply(parse_time)
+    sched_filtered["_START_TIME"] = sched_filtered["START"].apply(_parse_time)
+    sched_filtered["_END_TIME"] = sched_filtered["END"].apply(_parse_time)
 
     # Compute available hours for each translator in the demand window
     sched_filtered["_AVAILABLE_HOURS"] = sched_filtered.apply(
-        lambda row: compute_available_hours(row, demand.start, demand.end),
+        lambda row: _compute_available_hours(row, demand.start, demand.end),
         axis=1,
     )
 
     available_mask = sched_filtered["_AVAILABLE_HOURS"] >= required_hours
-    passed_names = set(
+    available_names = set(
         sched_filtered.loc[available_mask, "NAME"].str.strip().unique()
     )
-    failed_names = set(
-        sched_filtered.loc[~available_mask, "NAME"].str.strip().unique()
-    )
 
-    # Build result DataFrames
-    passed_all = translators_data_df[
-        translators_data_df["TRANSLATOR"].str.strip().isin(passed_names)
-    ].copy().reset_index(drop=True)
+    if not available_names:
+        print(
+            f"  [C3] No translators have enough capacity "
+            f"(need {required_hours:.1f}h = {demand.hours}h x {AVAILABILITY_BIAS} bias)."
+        )
+        return pd.DataFrame(columns=["TRANSLATOR"])
 
-    passed_c1c2_only = translators_data_df[
-        translators_data_df["TRANSLATOR"].str.strip().isin(failed_names)
-    ].copy().reset_index(drop=True)
+    # Build final result: translators_data rows for available translators
+    result = translators_data_df[
+        translators_data_df["TRANSLATOR"].str.strip().isin(available_names)
+    ].copy()
 
     print(
-        f"  [C3] {len(passed_all)} passed all | "
-        f"{len(passed_c1c2_only)} passed C1+C2 only (failed capacity at bias {AVAILABILITY_BIAS})"
+        f"  [C3] {len(result)} translator(s) passed all hard constraints "
+        f"for demand: {demand}"
     )
 
-    return passed_all, passed_c1c2_only
+    return result.reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def compute_available_hours(
+def _compute_available_hours(
     row: pd.Series,
     demand_start: datetime,
     demand_end: datetime,
@@ -368,13 +365,11 @@ def compute_available_hours(
     return total_hours
 
 
-def parse_time(value) -> time:
+def _parse_time(value) -> time:
     """
     Convert a schedule start/end value to a datetime.time object.
 
-    Handles: datetime.time, datetime.datetime, pd.Timestamp,
-             str "HH:MM:SS", and str "1900-01-01 03:00:00" (Excel artefact
-             for overnight shifts).
+    Handles: datetime.time, datetime.datetime, pd.Timestamp, str "HH:MM:SS".
     """
     if isinstance(value, time):
         return value
@@ -382,12 +377,8 @@ def parse_time(value) -> time:
         return value.time()
     if isinstance(value, pd.Timestamp):
         return value.time()
-    # String fallback — try pd.to_datetime first (handles '1900-01-01 HH:MM:SS')
+    # String fallback
     value = str(value).strip()
-    try:
-        return pd.to_datetime(value).time()
-    except Exception:
-        pass
     parts = value.split(":")
     if len(parts) >= 2:
         return time(int(parts[0]), int(parts[1]),
