@@ -30,7 +30,7 @@ Ensure you have the following structure before running:
 ### 2. Run the Application
 Open the terminal , navigate to the folder  `performance_app.py`, and run the following command:
 
-.venv\Scripts\streamlit.exe run app.py
+.venv\Scripts\streamlit.exe run performance_app.py
 
 ### 3. Using the App
 1.  After running the command, Streamlit will automatically open a tab in your default web browser (usually at `http://localhost:8501`).
