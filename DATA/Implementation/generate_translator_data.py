@@ -189,6 +189,7 @@ output_cols = [
 ]
 
 result = latest[output_cols].copy()
+result["assigned"] = 0
 result = result.sort_values("TRANSLATOR").reset_index(drop=True)
 
 # ── STEP 4: SAVE ────────────────────────────────────────────────────────────

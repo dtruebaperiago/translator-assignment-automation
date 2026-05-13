@@ -14,13 +14,11 @@ to only those who satisfy the three hard constraints:
 Usage (standalone):
     python demand.py --demands demands.csv --data-dir DATA
 
-Import usage (from main.py):
+Import usage (from filters.py):
     from backend.constraints.demand import (
         load_demands, enrich_demands, filter_translators, load_csv_data,
     )
 """
-
-from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
@@ -62,8 +60,7 @@ WEEKDAY_TO_COL = {
 AVAILABILITY_BIAS: float = 1.5
 
 
-# ── Dataclass ────────────────────────────────────────────────────────────────
-
+#Define Demand
 @dataclass
 class Demand:
     """A single client task demand."""
@@ -105,10 +102,7 @@ class Demand:
         )
 
 
-# ---------------------------------------------------------------------------
 # 1. Load demands from CSV
-# ---------------------------------------------------------------------------
-
 def load_demands(csv_path: str) -> list[Demand]:
     """
     Read a CSV file and return a list of Demand objects.
@@ -147,10 +141,7 @@ def load_demands(csv_path: str) -> list[Demand]:
     return demands
 
 
-# ---------------------------------------------------------------------------
 # 2. Enrich demands with client data from Clients.csv
-# ---------------------------------------------------------------------------
-
 def enrich_demands(
     demands: list[Demand],
     clients_df: pd.DataFrame,
@@ -183,10 +174,7 @@ def enrich_demands(
     return demands
 
 
-# ---------------------------------------------------------------------------
 # 3. Filter translators (hard constraints)
-# ---------------------------------------------------------------------------
-
 def filter_translators(
     demand: Demand,
     pairs_df: pd.DataFrame,
@@ -270,9 +258,21 @@ def filter_translators(
         )
         return empty, empty
 
+    # --- Constraint 2.5: Not currently assigned ---
+    unassigned_mask = translators_data_df.get("assigned", 0) == 0
+    unassigned_translators = set(
+        translators_data_df.loc[unassigned_mask, "TRANSLATOR"].str.strip().unique()
+    )
+
+    qualified_from_history = qualified_from_history & unassigned_translators
+
+    if not qualified_from_history:
+        print("[filter] No translators found that are currently unassigned.")
+        return empty, empty
+
     print(
-        f"  [C1+C2] {len(qualified_from_history)} translator(s) match "
-        f"lang pair + task type."
+        f"  [C1+C2+C2.5] {len(qualified_from_history)} translator(s) match "
+        f"lang pair + task type + unassigned."
     )
 
     # --- Constraint 3: Schedule capacity check ---
@@ -322,10 +322,7 @@ def filter_translators(
     return passed_all, passed_c1c2_only
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
-
 def compute_available_hours(
     row: pd.Series,
     demand_start: datetime,
@@ -372,9 +369,7 @@ def parse_time(value) -> time:
     """
     Convert a schedule start/end value to a datetime.time object.
 
-    Handles: datetime.time, datetime.datetime, pd.Timestamp,
-             str "HH:MM:SS", and str "1900-01-01 03:00:00" (Excel artefact
-             for overnight shifts).
+    Handles: datetime.time, datetime.datetime, pd.Timestamp, str "HH:MM:SS".
     """
     if isinstance(value, time):
         return value
@@ -382,7 +377,7 @@ def parse_time(value) -> time:
         return value.time()
     if isinstance(value, pd.Timestamp):
         return value.time()
-    # String fallback — try pd.to_datetime first (handles '1900-01-01 HH:MM:SS')
+    # String fallback
     value = str(value).strip()
     try:
         return pd.to_datetime(value).time()
@@ -395,10 +390,7 @@ def parse_time(value) -> time:
     raise ValueError(f"Cannot parse time value: {value!r}")
 
 
-# ---------------------------------------------------------------------------
 # Load all reference CSVs in one call
-# ---------------------------------------------------------------------------
-
 def load_csv_data(
     data_dir: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -439,10 +431,7 @@ def load_csv_data(
     return clients_df, schedules_df, pairs_df, translators_data_df
 
 
-# ---------------------------------------------------------------------------
 # CLI entry point (for quick standalone testing)
-# ---------------------------------------------------------------------------
-
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Filter translators against a client demand CSV (CSV mode)."

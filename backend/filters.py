@@ -1,5 +1,5 @@
 """
-main.py — AssignMate entry point
+filters.py — AssignMate entry point
 =================================
 Loads a client-demand CSV and the reference CSVs from the DATA/ directory,
 then runs the hard-constraint filtering pipeline defined in
@@ -7,7 +7,7 @@ then runs the hard-constraint filtering pipeline defined in
 from ``backend/constraints/client.py``.
 
 Quick start:
-    python backend/main.py --demands sample_demand.csv
+    python backend/filters.py --demands sample_demand.csv
 
 Optional arguments:
     --data-dir DIR   Path to the DATA/ folder (default: DATA).
@@ -21,7 +21,7 @@ import argparse
 import sys
 import pandas as pd
 
-# Allow running from the repo root: `python backend/main.py ...`
+# Allow running from the repo root: `python backend/filters.py ...`
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
