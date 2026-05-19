@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iDISC AssignMate HUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { theme: { extend: { colors: { gold: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' } } } } }</script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                transform: translateY(0);
+                opacity: 1
+            }
+
+            to {
+                transform: translateY(100%);
+                opacity: 0
+            }
+        }
+
+        .toast-enter {
+            animation: slideInUp .3s ease-out forwards
+        }
+
+        .toast-exit {
+            animation: slideOutDown .3s ease-in forwards
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -400px 0
+            }
+
+            100% {
+                background-position: 400px 0
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+            border-radius: 8px
+        }
+
+        .skeleton-text {
+            height: 14px;
+            margin-bottom: 8px;
+            width: 75%
+        }
+
+        .skeleton-title {
+            height: 20px;
+            margin-bottom: 12px;
+            width: 50%
+        }
+
+        .skeleton-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .skeleton-card {
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 12px
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            display: inline-block
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 22px;
+            transition: .3s
+        }
+
+        .toggle-slider:before {
+            content: '';
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .3s
+        }
+
+        .toggle-switch input:checked+.toggle-slider {
+            background: #6366f1
+        }
+
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(18px)
+        }
+
+        .gold-ribbon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 14px 4px 10px;
+            border-radius: 0 12px 0 12px;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, .3)
+        }
+
+        .best-match-card {
+            border: 2px solid #f59e0b !important;
+            box-shadow: 0 4px 24px rgba(245, 158, 11, .15) !important;
+            background: linear-gradient(135deg, #fffbeb 0%, #ffffff 40%) !important
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp .4s ease-out forwards
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans h-screen w-full flex overflow-hidden">
+
+    <!-- ⚠️ file:// protocol warning — hidden by default, shown via JS if needed -->
+    <div id="file-protocol-warning" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.92);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:540px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+            <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+            <h2 style="font-size:22px;font-weight:800;color:#1e293b;margin-bottom:10px;">Cannot load data over <code style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:18px;">file://</code></h2>
+            <p style="color:#64748b;margin-bottom:24px;line-height:1.6;">
+                Browsers block local file requests for security reasons.<br>
+                You need to serve this app through a local HTTP server.
+            </p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;text-align:left;margin-bottom:24px;">
+                <p style="font-size:13px;font-weight:700;color:#475569;margin-bottom:10px;">▶ QUICKEST FIX — run in your terminal:</p>
+                <code style="display:block;background:#0f172a;color:#7dd3fc;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.8;">
+                    cd frontend<br>
+                    python serve.py
+                </code>
+                <p style="font-size:12px;color:#94a3b8;margin-top:10px;">Then open <strong>http://localhost:8080/idisc_hud.html</strong> in your browser.</p>
+            </div>
+            <p style="font-size:12px;color:#94a3b8;">See <strong>frontend/README.md</strong> for full setup instructions.</p>
+        </div>
+    </div>
+    <script>
+        // Show blocking warning if opened directly via file:// protocol
+        if (window.location.protocol === 'file:') {
+            const w = document.getElementById('file-protocol-warning');
+            if (w) w.style.display = 'flex';
+        }
+    </script>
+
+    <!-- Sidebar Navigation (Collapsed) -->
+    <nav class="w-16 bg-slate-900 flex flex-col items-center py-6 shadow-xl z-20">
+        <div
+            class="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-xl mb-8 shadow-md">
+            iD
+        </div>
+        <div class="flex flex-col space-y-6 flex-1 text-slate-400">
+            <button id="nav-dashboard" onclick="switchTab('dashboard')"
+                class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Dashboard">
+                <i data-lucide="layout-dashboard"></i>
+            </button>
+            <button id="nav-tasks" onclick="switchTab('tasks')"
+                class="p-2 bg-slate-800 text-indigo-400 rounded-xl transition-colors" title="Tasks">
+                <i data-lucide="list-todo"></i>
+            </button>
+            <button id="nav-translators" onclick="switchTab('translators')"
+                class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Translators">
+                <i data-lucide="users"></i>
+            </button>
+            <button id="nav-clients" onclick="switchTab('clients')"
+                class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Clients">
+                <i data-lucide="building-2"></i>
+            </button>
+        </div>
+        <div class="mt-auto">
+            <button id="nav-settings" onclick="switchTab('settings')"
+                class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Settings">
+                <i data-lucide="settings"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- App Views Container -->
+    <div id="view-dashboard" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-50 p-8">
+        <header class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+            <p class="text-slate-500">System status and key performance metrics.</p>
+        </header>
+        <div class="grid grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 text-indigo-500 mb-2"><i data-lucide="list-todo"></i> <span
+                        class="font-bold text-slate-700">Pending Tasks</span></div>
+                <div class="text-3xl font-bold text-slate-800">5</div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 text-emerald-500 mb-2"><i data-lucide="users"></i> <span
+                        class="font-bold text-slate-700">Active Translators</span></div>
+                <div class="text-3xl font-bold text-slate-800">24</div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 text-amber-500 mb-2"><i data-lucide="trending-up"></i> <span
+                        class="font-bold text-slate-700">On-Time Delivery</span></div>
+                <div class="text-3xl font-bold text-slate-800">98.2%</div>
+            </div>
+        </div>
+        <div
+            class="bg-white flex-1 rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-slate-400">
+            <i data-lucide="bar-chart-3" class="w-12 h-12 mb-4 opacity-50"></i>
+            <p>Historical performance charts and margins will load here.</p>
+        </div>
+    </div>
+
+    <!-- Container for Tasks View -->
+    <div id="view-tasks" class="flex-1 flex overflow-hidden">
+        <!-- Left Panel: Pending Tasks Inbox -->
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full z-10">
+            <div class="p-5 border-b border-slate-200 bg-white sticky top-0">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="inbox" class="w-5 h-5 text-indigo-500"></i>
+                        Pending Tasks
+                    </h2>
+                    <input type="file" id="csv-upload" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+                    <button onclick="document.getElementById('csv-upload').click()"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-md transition-colors"
+                        title="Upload CSV">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="mt-4 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" placeholder="Search tasks..."
+                        class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <span
+                        class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100">All
+                        (5)</span>
+                    <span
+                        class="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md cursor-pointer hover:bg-slate-200">Urgent
+                        (2)</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="task-list">
+                <!-- Task cards will be injected here by JS -->
+            </div>
+        </aside>
+
+        <!-- Main Panel: AI Recommender -->
+        <main class="flex-1 flex flex-col h-full bg-slate-50/50 relative overflow-hidden">
+            <!-- Top App Bar -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10">
+                <h1 class="font-semibold text-slate-700">AI Assignment Copilot</h1>
+                <div class="flex items-center gap-4">
+                    <!-- Model server status badge -->
+                    <div id="server-badge" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">
+                        <span id="server-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span id="server-label">Offline Mode</span>
+                    </div>
+                    <button class="text-slate-400 hover:text-slate-600 relative">
+                        <i data-lucide="bell"></i>
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    </button>
+                    <div class="flex items-center gap-2 border-l border-slate-200 pl-4">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">PM</div>
+                        <span class="text-sm font-medium text-slate-700">Sarah Jenkins</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-8" id="main-content">
+                <!-- Dynamic Content Injected Here -->
+                <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                    <i data-lucide="mouse-pointer-click" class="w-12 h-12 mb-4 opacity-50"></i>
+                    <p class="text-lg">Select a pending task from the inbox to view AI recommendations.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Container for Translators View -->
+    <div id="view-translators" class="hidden flex-1 flex overflow-hidden">
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full z-10">
+            <div class="p-5 border-b border-slate-200 bg-white sticky top-0">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5 text-indigo-500"></i>
+                    Translators Database
+                </h2>
+                <div class="mt-4 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" placeholder="Search roster..."
+                        class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="translator-list">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
+        <main class="flex-1 flex flex-col h-full bg-slate-50/50 relative overflow-hidden">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center px-8 z-10">
+                <h1 class="font-semibold text-slate-700">Translator Profile</h1>
+            </header>
+            <div class="flex-1 overflow-y-auto p-8" id="translator-content">
+                <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                    <i data-lucide="user-search" class="w-12 h-12 mb-4 opacity-50"></i>
+                    <p class="text-lg">Select a translator to view their stats, schedule, and cost.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Container for Clients View -->
+    <div id="view-clients" class="hidden flex-1 flex overflow-hidden">
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full z-10">
+            <div class="p-5 border-b border-slate-200 bg-white sticky top-0">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="building-2" class="w-5 h-5 text-indigo-500"></i>
+                    Clients Database
+                </h2>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="client-list">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
+        <main class="flex-1 flex flex-col h-full bg-slate-50/50 relative overflow-hidden">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center px-8 z-10">
+                <h1 class="font-semibold text-slate-700">Client Rules & Preferences</h1>
+            </header>
+            <div class="flex-1 overflow-y-auto p-8" id="client-content">
+                <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                    <i data-lucide="building" class="w-12 h-12 mb-4 opacity-50"></i>
+                    <p class="text-lg">Select a client to view their SLA, wildcards, and minimum quality thresholds.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Container for Settings View -->
+    <!-- Settings View — Model Switcher -->
+    <div id="view-settings" class="hidden flex-1 flex-col overflow-hidden bg-slate-50 p-8">
+        <header class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">System Settings</h1>
+            <p class="text-slate-500">Switch between trained Dual-Tower MLP models. Changes apply immediately to new recommendations.</p>
+        </header>
+        <!-- Server status card -->
+        <div id="settings-server-card" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 max-w-2xl">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="server" class="w-4 h-4 text-indigo-500"></i> Inference Server</h2>
+                <span id="settings-server-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">Checking…</span>
+            </div>
+            <p class="text-sm text-slate-500">Start with: <code class="bg-slate-100 px-2 py-0.5 rounded text-xs">python Backend/inference_server.py</code></p>
+        </div>
+        <!-- Model cards -->
+        <div id="model-cards" class="grid grid-cols-1 gap-4 max-w-2xl">
+            <div class="text-sm text-slate-400 text-center py-8">Start the inference server to see available models.</div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
+
+    <script>
+        lucide.createIcons();
+
+        /* =====================================================================
+         * §1 — STATE MANAGEMENT
+         * ===================================================================*/
+        const AppState = {
+            activeTaskId: null,
+            activeTranslatorId: null,
+            activeClientId: null,
+            tasks: [],
+            translators: [],
+            clients: [],
+            constraints: { strictSchedule: true, strictIndustry: true, enforceWildcards: true },
+            loading: { tasks: false, recommendations: false }
+        };
+
+        /* =====================================================================
+         * §2 — DATA SERVICE  (Async API Integration)
+         * =====================================================================
+         * Translators and Clients are loaded from local JSON files generated
+         * by extract_data.js (983 translators, 2645 clients from Data.csv).
+         *
+         * In production, set API_BASE to your FastAPI server URL, e.g.:
+         *   const API_BASE = 'http://localhost:8000/api/v1';
+         *
+         * Endpoint contract expected by each method:
+         *   GET  /tasks/pending         → [{id,project,type,...}]
+         *   POST /tasks/{id}/recommend  → {recommendations:[...], businessLift:{...}}
+         *   GET  /translators           → [{id,name,source,target,rate,quality,...}]
+         *   GET  /clients               → [{id,name,industry,...}]
+         *   POST /tasks/{id}/assign     → {ok:true}
+         * ===================================================================*/
+        // API_BASE is set dynamically — auto-detected at startup.
+        // null = offline mode (local JSON); string = live inference server.
+        let API_BASE = null;
+        const INFERENCE_URL = 'http://127.0.0.1:8000/api/v1';
+
+        const DataService = {
+            async _fetch(url, opts = {}) {
+                const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+                if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+                return res.json();
+            },
+
+            async fetchPendingTasks() {
+                if (API_BASE) return this._fetch(`${API_BASE}/tasks/pending`);
+                return [];
+            },
+
+            async fetchRecommendations(taskId, constraints = {}) {
+                const task = AppState.tasks.find(t => t.id === taskId);
+                if (API_BASE && task) {
+                    // Send full task fields so the server can build feature vectors
+                    return this._fetch(`${API_BASE}/tasks/${taskId}/recommend`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            source: task.source, target: task.target,
+                            type: task.type, forecast: task.forecast,
+                            client: task.client, industry: task.industry,
+                            description: task.description,
+                            ...constraints
+                        })
+                    });
+                }
+                return task ? { recommendations: task.recommendations || [], businessLift: task.businessLift || null } : { recommendations: [], businessLift: null };
+            },
+
+            async fetchTranslators() {
+                if (API_BASE) return this._fetch(`${API_BASE}/translators`);
+                return this._fetch('data/translators.json');
+            },
+
+            async fetchClients() {
+                if (API_BASE) return this._fetch(`${API_BASE}/clients`);
+                return this._fetch('data/clients.json');
+            },
+
+            async assignTask(taskId, translatorName) {
+                if (API_BASE) return this._fetch(`${API_BASE}/tasks/${taskId}/assign`, {
+                    method: 'POST', body: JSON.stringify({ translator: translatorName })
+                });
+                return { ok: true };
+            },
+        };
+
+        /* =====================================================================
+         * §4 — NAVIGATION LOGIC
+         * ===================================================================*/
+        function switchTab(tabId) {
+            ['dashboard', 'tasks', 'translators', 'clients', 'settings'].forEach(id => {
+                const el = document.getElementById('view-' + id);
+                if (el) { el.classList.add('hidden'); el.classList.remove('flex') }
+            });
+            const activeView = document.getElementById('view-' + tabId);
+            if (activeView) { activeView.classList.remove('hidden'); activeView.classList.add('flex') }
+            ['dashboard', 'tasks', 'translators', 'clients', 'settings'].forEach(id => {
+                const btn = document.getElementById('nav-' + id);
+                if (btn) btn.className = id === tabId
+                    ? "p-2 bg-slate-800 text-indigo-400 rounded-xl transition-colors"
+                    : "p-2 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors";
+            });
+            if (tabId === 'translators') loadAndRenderTranslators();
+            if (tabId === 'clients') loadAndRenderClients();
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        /* =====================================================================
+         * §5 — TRANSLATORS VIEW (983 real translators, with search)
+         * ===================================================================*/
+        let _trSearchTerm = '';
+        async function loadAndRenderTranslators() {
+            AppState.translators = await DataService.fetchTranslators();
+            renderTranslatorsList();
+            const si = document.querySelector('#view-translators input[type="text"]');
+            if (si) si.oninput = e => { _trSearchTerm = e.target.value.toLowerCase(); renderTranslatorsList(); };
+        }
+
+        function renderTranslatorsList() {
+            const lc = document.getElementById('translator-list'); lc.innerHTML = '';
+            let f = AppState.translators;
+            if (_trSearchTerm) f = f.filter(tr => tr.name.toLowerCase().includes(_trSearchTerm) || tr.source.toLowerCase().includes(_trSearchTerm) || tr.target.toLowerCase().includes(_trSearchTerm) || (tr.taskTypes || []).join(',').toLowerCase().includes(_trSearchTerm));
+            lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 px-1 mb-1">${f.length} of ${AppState.translators.length} translators</div>`);
+            f.slice(0, 100).forEach(tr => {
+                const isA = AppState.activeTranslatorId === tr.id;
+                const bc = isA ? 'border-indigo-500 bg-indigo-50/30 shadow-sm ring-1 ring-indigo-500' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm';
+                const wi = tr.workerType === 'Internal' ? `<i data-lucide="building" class="w-3 h-3 text-slate-400 inline"></i>` : `<i data-lucide="globe" class="w-3 h-3 text-fuchsia-500 inline"></i>`;
+                lc.insertAdjacentHTML('beforeend', `<div onclick="selectTranslator('${tr.id}')" class="p-3 border rounded-xl cursor-pointer transition-all ${bc}">
+                    <div class="flex justify-between items-start mb-1"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">${tr.name} ${wi}</h3><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${tr.taskCount} tasks</span></div>
+                    <div class="text-xs text-slate-500 mb-1">${tr.source} &rarr; ${tr.target} | ${(tr.taskTypes || []).join(', ')}</div>
+                    <div class="flex justify-between items-center text-xs font-medium text-slate-600 mt-2"><span>€${tr.rate}/hr</span><span class="flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i> ${tr.quality}</span></div>
+                </div>`);
+            });
+            if (f.length > 100) lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 text-center py-3">Showing first 100 — use search to narrow</div>`);
+            lucide.createIcons();
+        }
+
+        function selectTranslator(id) {
+            AppState.activeTranslatorId = id; renderTranslatorsList();
+            const tr = AppState.translators.find(t => t.id === id);
+            const wb = tr.workerType === 'Internal' ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="building" class="w-3 h-3"></i> Internal</span>` : `<span class="bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="globe" class="w-3 h-3"></i> Third-Party</span>`;
+            const types = (tr.taskTypes || []).map(t => `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">${t}</span>`).join(' ');
+            document.getElementById('translator-content').innerHTML = `
+                <div class="max-w-3xl mx-auto mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                        <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-bold">${tr.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
+                        <div class="flex flex-col gap-1.5"><h2 class="text-2xl font-bold text-slate-800 leading-none">${tr.name}</h2><p class="text-slate-500">${(tr.taskTypes || []).join(' / ')} Specialist</p>${wb}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div><h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Performance</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Avg. Rate</span><span class="font-bold text-slate-800">€${tr.rate}/hr</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Avg. Quality</span><span class="font-bold text-emerald-600">${tr.quality} / 10</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Total Tasks</span><span class="font-bold text-slate-800">${tr.taskCount}</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Total Hours</span><span class="font-bold text-slate-800">${tr.totalHours}h</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Clients Worked</span><span class="font-bold text-slate-800">${tr.clientsWorked}</span></div>
+                            </div>
+                        </div>
+                        <div><h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Capabilities</h3>
+                            <div class="space-y-3">
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Task Types</div><div class="flex flex-wrap gap-1">${types}</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Primary Pair</div><div class="font-medium text-slate-800 text-sm">${tr.source} → ${tr.target}</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">All Source Languages</div><div class="text-xs text-slate-600">${(tr.sourceLangs || []).join(', ')}</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">All Target Languages</div><div class="text-xs text-slate-600">${(tr.targetLangs || []).join(', ')}</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        /* =====================================================================
+         * §6 — CLIENTS VIEW (2645 real clients, with search)
+         * ===================================================================*/
+        let _clSearchTerm = '';
+        async function loadAndRenderClients() {
+            AppState.clients = await DataService.fetchClients();
+            renderClientsList();
+            const si = document.querySelector('#view-clients input[type="text"]');
+            if (si) si.oninput = e => { _clSearchTerm = e.target.value.toLowerCase(); renderClientsList(); };
+        }
+
+        function renderClientsList() {
+            const lc = document.getElementById('client-list'); lc.innerHTML = '';
+            let f = AppState.clients;
+            if (_clSearchTerm) f = f.filter(cl => cl.name.toLowerCase().includes(_clSearchTerm) || (cl.industry || '').toLowerCase().includes(_clSearchTerm) || (cl.sector || '').toLowerCase().includes(_clSearchTerm));
+            lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 px-1 mb-1">${f.length} of ${AppState.clients.length} clients</div>`);
+            f.slice(0, 100).forEach(cl => {
+                const isA = AppState.activeClientId === cl.id;
+                const bc = isA ? 'border-indigo-500 bg-indigo-50/30 shadow-sm ring-1 ring-indigo-500' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm';
+                lc.insertAdjacentHTML('beforeend', `<div onclick="selectClient('${cl.id}')" class="p-3 border rounded-xl cursor-pointer transition-all ${bc}">
+                    <h3 class="font-bold text-slate-800 text-sm">${cl.name}</h3>
+                    <div class="text-xs text-slate-500">${cl.industry || 'General'} · ${cl.taskCount} tasks</div>
+                </div>`);
+            });
+            if (f.length > 100) lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 text-center py-3">Showing first 100 — use search to narrow</div>`);
+        }
+
+        function selectClient(id) {
+            AppState.activeClientId = id; renderClientsList();
+            const cl = AppState.clients.find(c => c.id === id);
+            const types = (cl.taskTypes || []).map(t => `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">${t}</span>`).join(' ');
+            document.getElementById('client-content').innerHTML = `
+                <div class="max-w-3xl mx-auto mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-1">${cl.name}</h2>
+                    <p class="text-slate-500 mb-6 pb-6 border-b border-slate-100">${cl.sector || ''} · ${cl.industry || 'General'}</p>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Business Metrics</h3>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100"><div class="text-xs text-indigo-600 font-bold mb-1">Avg. Rate</div><div class="text-xl font-bold text-slate-800">€${cl.avgRate}/hr</div></div>
+                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100"><div class="text-xs text-emerald-600 font-bold mb-1">Avg. Quality</div><div class="text-xl font-bold text-slate-800">${cl.avgQuality} / 10</div></div>
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100"><div class="text-xs text-blue-600 font-bold mb-1">Total Tasks</div><div class="text-xl font-bold text-slate-800">${cl.taskCount}</div></div>
+                        <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100"><div class="text-xs text-purple-600 font-bold mb-1">Translators Used</div><div class="text-xl font-bold text-slate-800">${cl.translatorsUsed}</div></div>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Task Types</h3>
+                    <div class="flex flex-wrap gap-2 mb-6">${types || '<span class="text-sm text-slate-400">N/A</span>'}</div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Industry Classification</h3>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                        <div class="flex justify-between text-sm"><span class="text-slate-500">Sector</span><span class="font-medium text-slate-800">${cl.sector || 'N/A'}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500">Industry Group</span><span class="font-medium text-slate-800">${cl.industryGroup || 'N/A'}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500">Industry</span><span class="font-medium text-slate-800">${cl.industry || 'N/A'}</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-slate-500">Sub-Industry</span><span class="font-medium text-slate-800">${cl.subindustry || 'N/A'}</span></div>
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        /* =====================================================================
+         * §7 — SKELETON LOADERS
+         * ===================================================================*/
+        function renderSkeletonCards(container, count = 3) {
+            container.innerHTML = Array.from({ length: count }, () => `
+                <div class="skeleton-card"><div class="flex gap-4">
+                    <div class="skeleton skeleton-circle"></div>
+                    <div class="flex-1"><div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text" style="width:50%"></div></div>
+                </div></div>`).join('');
+        }
+
+        /* =====================================================================
+         * §8 — TASK LIST RENDER
+         * ===================================================================*/
+        function getScoreColor(s) {
+            if (s >= 90) return 'text-emerald-500 stroke-emerald-500 bg-emerald-50';
+            if (s >= 80) return 'text-indigo-500 stroke-indigo-500 bg-indigo-50';
+            return 'text-amber-500 stroke-amber-500 bg-amber-50';
+        }
+        function getProgressColor(s) {
+            if (s >= 90) return 'bg-emerald-500'; if (s >= 80) return 'bg-indigo-500'; return 'bg-amber-500';
+        }
+
+        function renderTaskList() {
+            const lc = document.getElementById('task-list');
+            lc.innerHTML = '';
+            AppState.tasks.forEach(task => {
+                const isActive = AppState.activeTaskId === task.id;
+                const bc = isActive ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'border-slate-200 hover:border-indigo-300 hover:shadow-sm';
+                const bg = isActive ? 'bg-indigo-50/30' : 'bg-white';
+                const ub = task.status === 'urgent' ? `<span class="flex h-2 w-2 rounded-full bg-rose-500"></span>` : '';
+                lc.insertAdjacentHTML('beforeend', `
+                    <div onclick="selectTask('${task.id}')" class="p-3 border rounded-xl cursor-pointer transition-all duration-200 ${bc} ${bg}">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-500">${task.id}</span>
+                            <div class="flex items-center gap-1.5">${ub}<span class="text-xs font-medium text-slate-400">${task.deadline}</span></div>
+                        </div>
+                        <h3 class="font-semibold text-slate-800 text-sm mb-1">${task.client} - ${task.type}</h3>
+                        <div class="flex items-center gap-2 text-xs font-medium text-slate-600">
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border border-slate-200">${task.source} &rarr; ${task.target}</span>
+                            <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${task.forecast}</span>
+                        </div>
+                    </div>`);
+            });
+            lucide.createIcons();
+        }
+
+        /* =====================================================================
+         * §9 — MAIN CONTENT RENDER (Business Lift + Toggles + Tie-Breaker)
+         * ===================================================================*/
+        async function renderMainContent(taskId) {
+            const mc = document.getElementById('main-content');
+            const task = AppState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // Show skeleton while fetching recommendations
+            AppState.loading.recommendations = true;
+            mc.innerHTML = `<div class="max-w-4xl mx-auto w-full pb-10"><div class="skeleton-card"><div class="skeleton skeleton-title" style="width:60%"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="width:40%"></div></div><div class="mt-6 space-y-4">${Array.from({ length: 3 }, () => `<div class="skeleton-card"><div class="flex gap-4"><div class="skeleton skeleton-circle"></div><div class="flex-1"><div class="skeleton skeleton-title"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="width:50%"></div></div></div></div>`).join('')}</div></div>`;
+
+            // Fetch recommendations from API (or mock)
+            const data = await DataService.fetchRecommendations(taskId, AppState.constraints);
+            const recs = data.recommendations || [];
+            const lift = data.businessLift;
+            AppState.loading.recommendations = false;
+
+            const typeColor = task.type === 'ProofReading' ? 'bg-purple-100 text-purple-700' : task.type === 'PostEditing' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700';
+
+            // Build business lift header
+            const liftHtml = lift ? `
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 mb-6 fade-in-up flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-emerald-700"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="font-bold text-sm">Business Lift</span></div>
+                    <div class="flex items-center gap-4 flex-wrap text-sm">
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg font-bold">Saves €${lift.savingsEur}</span>
+                        <span class="bg-teal-100 text-teal-800 px-3 py-1 rounded-lg font-bold">${lift.deliveryGuarantee} Delivery</span>
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg font-bold">${lift.marginBoost} Margin</span>
+                    </div>
+                    <span class="text-xs text-emerald-600 ml-auto">vs. ${lift.baselineTranslator}</span>
+                </div>`: '';
+
+            // Build constraint toggles
+            const togglesHtml = `
+                <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 fade-in-up" style="animation-delay:.1s">
+                    <div class="flex items-center gap-2 mb-3"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-500"></i><span class="text-sm font-bold text-slate-700">Hard Constraint Controls</span><span class="text-xs text-slate-400 ml-2">Toggle to re-run AI with relaxed filters</span></div>
+                    <div class="flex flex-wrap gap-6">
+                        ${buildToggle('strictSchedule', 'Strict Schedule Match', 'calendar-check')}
+                        ${buildToggle('strictIndustry', 'Strict Industry Match', 'factory')}
+                        ${buildToggle('enforceWildcards', 'Enforce Client Wildcards', 'shield-alert')}
+                    </div>
+                </div>`;
+
+            // Build recommendation cards
+            const recsHtml = recs.map((rec, i) => {
+                const isTop = i === 0;
+                const cardClass = isTop ? 'best-match-card' : 'bg-white border border-slate-200';
+                const ribbonHtml = isTop ? `<div class="gold-ribbon"><i data-lucide="trophy" class="w-3 h-3 inline -mt-0.5"></i> Best Match</div>` : '';
+                const deltaHtml = isTop && rec.deltaAdvantage ? `<div class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg text-xs font-bold mt-1"><i data-lucide="zap" class="w-3 h-3"></i>${rec.deltaAdvantage}</div>` : '';
+                const rankBg = isTop ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400';
+                const workerBadgeClass = rec.workerType === 'Internal' ? 'bg-slate-100 text-slate-600' : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200';
+                const workerIcon = rec.workerType === 'Internal' ? 'building' : 'globe';
+                return `
+                <div class="${cardClass} rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group fade-in-up" style="animation-delay:${i * 0.1}s">
+                    ${ribbonHtml}
+                    <div class="absolute top-0 ${isTop ? 'left-0 rounded-br-lg' : 'right-0 rounded-bl-lg'} ${rankBg} font-bold text-xs px-2 py-1">#${i + 1}</div>
+                    <div class="flex items-start gap-4 mt-1">
+                        <div class="relative flex items-center justify-center w-14 h-14 rounded-full ${getScoreColor(rec.matchScore)} flex-shrink-0">
+                            <svg class="w-full h-full transform -rotate-90 absolute" viewBox="0 0 36 36">
+                                <path class="text-slate-200 stroke-current" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="${getScoreColor(rec.matchScore).split(' ')[1]} stroke-current" stroke-dasharray="${rec.matchScore}, 100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <span class="font-bold text-sm absolute">${rec.matchScore}%</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-1">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-lg text-slate-800">${rec.name}</h3>
+                                        <span class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${workerBadgeClass}"><i data-lucide="${workerIcon}" class="w-3 h-3"></i> ${rec.workerType}</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 mt-1 mb-1">${rec.tags.map(t => `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-${t.color}-100 text-${t.color}-700">${t.text}</span>`).join('')}</div>
+                                    ${deltaHtml}
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-semibold text-slate-700">€${rec.cost}<span class="text-slate-400 text-xs font-normal">/hr</span></div>
+                                    <div class="text-xs text-slate-500 flex items-center justify-end gap-1 mt-0.5"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i> ${rec.quality} Q-Score</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm text-slate-600 mb-4 flex gap-3"><i data-lucide="sparkles" class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5"></i><p>${rec.reason}</p></div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Available Schedule</div>
+                                <button onclick="assignTask('${task.id}','${rec.name}')" class="${isTop ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i> Assign Task</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            mc.innerHTML = `
+                <div class="max-w-4xl mx-auto w-full pb-10">
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 fade-in-up">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="text-sm font-bold text-slate-400">${task.id}</span>
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${typeColor}">${task.type}</span>
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">${task.industry}</span>
+                                </div>
+                                <h2 class="text-2xl font-bold text-slate-800">${task.client} <span class="text-slate-400 font-normal">|</span> ${task.source} &rarr; ${task.target}</h2>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-slate-500 mb-1">Theoretical Delivery</div>
+                                <div class="font-bold text-rose-600 flex items-center justify-end gap-1.5"><i data-lucide="calendar-clock" class="w-4 h-4"></i>${task.deadline}</div>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 text-sm border-t border-slate-100 pt-4 mt-2"><strong>PM Notes:</strong> ${task.description} <br><strong>Forecast:</strong> ${task.forecast} estimated completion time.</p>
+                    </div>
+                    ${liftHtml}
+                    ${togglesHtml}
+                    <div class="mb-4 flex items-center gap-2">
+                        <div class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+                        <h2 class="text-lg font-bold text-slate-800">AI Top Matches</h2>
+                        <span class="text-sm text-slate-400 ml-2">Dual-Tower Recommender — Cost, Quality, and Schedule scoring.</span>
+                    </div>
+                    <div class="space-y-4">${recsHtml}</div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        function buildToggle(key, label, icon) {
+            const checked = AppState.constraints[key] ? 'checked' : '';
+            return `<label class="flex items-center gap-2 cursor-pointer select-none">
+                <i data-lucide="${icon}" class="w-4 h-4 text-slate-400"></i>
+                <span class="text-xs font-medium text-slate-600">${label}</span>
+                <label class="toggle-switch"><input type="checkbox" ${checked} onchange="toggleConstraint('${key}',this.checked)"><span class="toggle-slider"></span></label>
+            </label>`;
+        }
+
+        async function toggleConstraint(key, val) {
+            AppState.constraints[key] = val;
+            if (AppState.activeTaskId) {
+                showToast(`Constraint updated — re-running AI...`, 'success');
+                await renderMainContent(AppState.activeTaskId);
+            }
+        }
+
+        /* =====================================================================
+         * §10 — RECOMMENDATION ENGINE
+         * Mirrors the affinity formula from preprocessing_pipeline.py:
+         *   affinity = 0.40 × quality_score + 0.30 × experience_score + 0.30 × cost_efficiency
+         * Filters translators by matching language pair, then task type.
+         * ===================================================================*/
+        function computeRecommendations(task) {
+            const pool = AppState.translators || [];
+            if (pool.length === 0) return [];
+            const srcLow = (task.source || '').toLowerCase().trim();
+            const tgtLow = (task.target || '').toLowerCase().trim();
+            const typeLow = (task.type || '').toLowerCase().trim();
+
+            // Filter 1: language pair must match
+            let candidates = pool.filter(tr => {
+                const srcs = (tr.sourceLangs || [tr.source || '']).map(l => l.toLowerCase().trim());
+                const tgts = (tr.targetLangs || [tr.target || '']).map(l => l.toLowerCase().trim());
+                return srcs.some(l => l === srcLow) && tgts.some(l => l === tgtLow);
+            });
+
+            // Filter 2: task type (relax if no candidates survive)
+            const byType = candidates.filter(tr =>
+                !typeLow || typeLow === 'auto' ||
+                (tr.taskTypes || []).some(t => t.toLowerCase().trim() === typeLow)
+            );
+            if (byType.length > 0) candidates = byType;
+            if (candidates.length === 0) return [];
+
+            // Score using affinity formula
+            const maxRate  = Math.max(...candidates.map(tr => tr.rate      || 0), 1);
+            const maxTasks = Math.max(...candidates.map(tr => tr.taskCount || 0), 1);
+
+            const scored = candidates.map(tr => {
+                const q = (tr.quality   || 0) / 10;                           // quality  [0,1]
+                const x = Math.min((tr.taskCount || 0) / Math.min(maxTasks, 300), 1); // experience [0,1]
+                const e = 1 - (tr.rate || 0) / maxRate;                      // cost eff [0,1]
+                return { tr, affinity: 0.40*q + 0.30*x + 0.30*e };
+            });
+            scored.sort((a, b) => b.affinity - a.affinity);
+
+            return scored.slice(0, 3).map(({ tr, affinity }, i) => {
+                const score = Math.round(affinity * 100);
+                const tags = [];
+                if ((tr.quality || 0) >= 8) tags.push({ text: 'Top Quality', color: 'emerald' });
+                if ((tr.taskCount || 0) >= 200) tags.push({ text: 'Experienced', color: 'indigo' });
+                if (tr.workerType === 'Internal') tags.push({ text: 'Internal', color: 'slate' });
+                else tags.push({ text: 'Third-Party', color: 'fuchsia' });
+                if (tags.length < 2) tags.push({ text: task.type + ' Specialist', color: 'blue' });
+                return {
+                    name: tr.name, matchScore: score, cost: tr.rate, quality: tr.quality,
+                    workerType: tr.workerType,
+                    tags,
+                    reason: `Matched on ${task.source} → ${task.target} | ${tr.taskCount} completed tasks, ` +
+                            `avg quality ${tr.quality}/10, rate €${tr.rate}/hr. ` +
+                            `Affinity score: ${score}% (quality 40% + experience 30% + cost efficiency 30%).`,
+                    deltaAdvantage: i === 0 ? `${score}% affinity vs market avg` : null,
+                    available: true
+                };
+            });
+        }
+
+        function computeBusinessLift(task, recs) {
+            if (!recs || recs.length === 0) return null;
+            const top = recs[0];
+            const allRates = (AppState.translators || []).map(tr => tr.rate || 0).filter(r => r > 0);
+            const avgRate = allRates.length ? allRates.reduce((a, b) => a + b, 0) / allRates.length : top.cost;
+            const hours = parseFloat(task.forecast) || 8;
+            const savings = Math.max(0, Math.round((avgRate - top.cost) * hours));
+            return {
+                savingsEur: savings,
+                deliveryGuarantee: (top.quality || 0) >= 8 ? 'On-Time' : 'Estimated',
+                marginBoost: top.cost < avgRate ? `+${Math.round((1 - top.cost / avgRate) * 100)}%` : 'Standard',
+                baselineTranslator: 'Market Average (€' + avgRate.toFixed(1) + '/hr)'
+            };
+        }
+
+        /* =====================================================================
+         * §11 — INTERACTION LOGIC
+         * ===================================================================*/
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) { processCSV(e.target.result); event.target.value = ''; };
+            reader.readAsText(file);
+        }
+
+        function processCSV(csvText) {
+            const lines = csvText.split('\n').filter(l => l.trim().length > 0);
+            if (lines.length < 2) { showToast('CSV file is empty or invalid.', 'error'); return; }
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            let addedCount = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length !== headers.length) continue;
+                const newTask = {
+                    id: 'TSK-' + Math.floor(1000 + Math.random() * 9000),
+                    type: 'Translation', source: '', target: '',
+                    client: 'Imported Client', industry: 'General',
+                    forecast: 'TBD', deadline: 'TBD', status: 'normal',
+                    description: 'Imported via CSV upload.',
+                    recommendations: [], businessLift: null
+                };
+                headers.forEach((header, idx) => {
+                    const val = values[idx]; if (!val) return;
+                    if (header === 'task_id' || header === 'id')          newTask.id          = val;
+                    else if (header === 'task_type')                       newTask.type        = val;
+                    else if (header === 'source_lang')                     newTask.source      = val;
+                    else if (header === 'target_lang')                     newTask.target      = val;
+                    else if (header === 'manufacturer')                    newTask.client      = val;
+                    else if (header === 'manufacturer_industry')           newTask.industry    = val;
+                    else if (header === 'hours')                           newTask.forecast    = val + 'h';
+                    else if (header === 'end')                             newTask.deadline    = val;
+                    else if (header === 'status')                          newTask.status      = val.toLowerCase();
+                    else if (header === 'pm_notes' || header === 'description') newTask.description = val;
+                    else if (header === 'start' && !newTask.description.includes('Start'))
+                        newTask.description = 'Start: ' + val + ' | ' + newTask.description;
+                });
+                // Compute real recommendations from translator database
+                newTask.recommendations = computeRecommendations(newTask);
+                newTask.businessLift    = computeBusinessLift(newTask, newTask.recommendations);
+                AppState.tasks.unshift(newTask);
+                addedCount++;
+            }
+            if (addedCount > 0) { renderTaskList(); showToast(`Imported ${addedCount} tasks with AI recommendations.`, 'success'); }
+            else { showToast('No valid tasks found. Check column names match the README.', 'error'); }
+        }
+
+        async function selectTask(taskId) {
+            AppState.activeTaskId = taskId;
+            renderTaskList();
+            await renderMainContent(taskId);
+        }
+
+        async function assignTask(taskId, translatorName) {
+            await DataService.assignTask(taskId, translatorName);
+            const idx = AppState.tasks.findIndex(t => t.id === taskId);
+            if (idx > -1) AppState.tasks.splice(idx, 1);
+            AppState.activeTaskId = null;
+            renderTaskList();
+            document.getElementById('main-content').innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="check" class="w-8 h-8"></i>
+                    </div>
+                    <p class="text-lg font-medium text-slate-600 mb-1">Task Successfully Assigned</p>
+                    <p class="text-sm text-slate-400">Select another task from the inbox.</p>
+                </div>`;
+            lucide.createIcons();
+            showToast(`Assigned ${taskId} to ${translatorName}`, 'success');
+        }
+        /* =====================================================================
+         * §11 — TOAST NOTIFICATIONS (preserved from original)
+         * ===================================================================*/
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-slate-800' : 'bg-rose-600';
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            const iconColor = type === 'success' ? 'text-emerald-400' : 'text-white';
+            toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 toast-enter min-w-[300px] border border-slate-700/50`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 ${iconColor}"></i>
+                <div class="flex-1 font-medium text-sm">${message}</div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.classList.replace('toast-enter', 'toast-exit');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3500);
+        }
+
+        /* =====================================================================
+         * §12 — MODEL SWITCHER (Settings Tab)
+         * ===================================================================*/
+        let _availableModels = [];
+
+        function renderModelCards(models, activeId) {
+            const container = document.getElementById('model-cards');
+            if (!models || models.length === 0) {
+                container.innerHTML = '<div class="text-sm text-slate-400 text-center py-8">No models found on server.</div>';
+                return;
+            }
+            const lossColor = { MSELoss: 'blue', BCELoss: 'violet' };
+            container.innerHTML = models.map(m => {
+                const isActive = m.id === activeId;
+                const lc = lossColor[m.loss_criterion] || 'slate';
+                return `
+                <div class="bg-white rounded-2xl p-6 shadow-sm border-2 transition-all cursor-pointer hover:shadow-md
+                    ${isActive ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-200'}"
+                    onclick="activateModel('${m.id}')">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-sm">${m.id.toUpperCase()}</span>
+                            <div>
+                                <p class="font-bold text-slate-800">${m.description || m.id}</p>
+                                <p class="text-xs text-slate-400">${m.notes || ''}</p>
+                            </div>
+                        </div>
+                        ${isActive ? '<span class="text-xs font-bold px-3 py-1 rounded-full bg-indigo-600 text-white">ACTIVE</span>' : '<span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">Activate</span>'}
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-3 text-center">
+                        <div class="bg-slate-50 rounded-lg p-2">
+                            <p class="text-xs text-slate-400 mb-0.5">Loss</p>
+                            <p class="text-xs font-bold text-${lc}-600">${m.loss_criterion || '—'}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-2">
+                            <p class="text-xs text-slate-400 mb-0.5">Batch</p>
+                            <p class="text-xs font-bold text-slate-700">${m.hyperparameters?.batch_size || '—'}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-2">
+                            <p class="text-xs text-slate-400 mb-0.5">LR</p>
+                            <p class="text-xs font-bold text-slate-700">${m.hyperparameters?.learning_rate || '—'}</p>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function activateModel(modelId) {
+            if (!API_BASE) return;
+            try {
+                await fetch(`${API_BASE}/models/activate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_id: modelId })
+                });
+                // Re-fetch model list to refresh active state
+                const models = await fetch(`${API_BASE}/models`).then(r => r.json());
+                _availableModels = models;
+                const active = models.find(m => m.active);
+                renderModelCards(models, active?.id);
+                // Update badge
+                document.getElementById('server-label').textContent = `${active?.id?.toUpperCase() || '?'} Active`;
+                showToast(`Switched to model ${modelId.toUpperCase()}`, 'success');
+                // Clear cached recommendations so next click re-fetches with new model
+                AppState.tasks.forEach(t => { t.recommendations = []; t.businessLift = null; });
+            } catch (err) {
+                showToast('Failed to switch model', 'error');
+            }
+        }
+
+        /* =====================================================================
+         * §13 — ASYNC BOOTSTRAP (Application Entry Point)
+         * ===================================================================*/
+        (async function initApp() {
+            // 1. Auto-detect inference server
+            try {
+                const models = await fetch(`${INFERENCE_URL}/models`, { signal: AbortSignal.timeout(2000) }).then(r => r.json());
+                API_BASE = INFERENCE_URL;
+                _availableModels = models;
+                const active = models.find(m => m.active);
+                const activeId = active?.id || models[0]?.id;
+
+                // Update header badge — green / connected
+                const dot   = document.getElementById('server-dot');
+                const label = document.getElementById('server-label');
+                const badge = document.getElementById('server-badge');
+                dot.className   = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                label.textContent = `${activeId?.toUpperCase()} Active`;
+                badge.className = badge.className.replace('bg-slate-100 text-slate-500 border-slate-200',
+                    'bg-emerald-50 text-emerald-700 border-emerald-200');
+
+                // Update settings server badge
+                const sb = document.getElementById('settings-server-badge');
+                if (sb) { sb.textContent = 'Connected'; sb.className = sb.className.replace('bg-slate-100 text-slate-500', 'bg-emerald-100 text-emerald-700'); }
+
+                // Render model cards
+                renderModelCards(models, activeId);
+
+                console.log(`[iDISC] Server connected. Active model: ${activeId}`);
+            } catch {
+                // Server not running — offline mode
+                const sb = document.getElementById('settings-server-badge');
+                if (sb) { sb.textContent = 'Offline'; }
+                console.log('[iDISC] Inference server not detected. Using local JSON fallback.');
+            }
+
+            // 2. Pre-load translators (for client-side fallback engine)
+            AppState.translators = await DataService.fetchTranslators();
+            AppState.tasks = await DataService.fetchPendingTasks();
+            renderTaskList();
+            switchTab('tasks');
+        })();
+
+    </script>
+</body>
+
+</html>
