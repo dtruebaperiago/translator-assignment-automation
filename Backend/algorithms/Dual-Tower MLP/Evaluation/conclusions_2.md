@@ -11,7 +11,8 @@ While the AI rarely picks the *exact same* translator as the historical PM (low 
 
 ### 1. Per-Task Inspector 
 
-(image per-inspector)
+<img width="1912" height="855" alt="per_task_inspector_aff" src="https://github.com/user-attachments/assets/b0d37b42-7659-4c5a-acd5-431ac0a952ea" />
+
 
 This section allows users to audit individual translation tasks. As seen in the image, it features a Head-to-Head Comparison between the human Project Manager's historical choice and our AI's Top #1 recommendation.
 
@@ -21,7 +22,8 @@ The main takeaway: It highlights the exact difference in Predicted Affinity and 
 
 ### 2. Global Analytics 
 
-image global
+<img width="1907" height="680" alt="global_analytics_aff" src="https://github.com/user-attachments/assets/0b2b89b4-c641-4258-9d3d-6ba76c7c7450" />
+
 
 This is the main dashboard summarizing the system's overall business value, moving away from legacy metrics like "Hit Rate" to focus on real optimization.
 
