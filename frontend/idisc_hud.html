@@ -27,6 +27,15 @@
             background: #94a3b8
         }
 
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         @keyframes slideInUp {
             from {
                 transform: translateY(100%);
@@ -245,6 +254,10 @@
                 class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Clients">
                 <i data-lucide="building-2"></i>
             </button>
+            <button id="nav-create-task" onclick="switchTab('create-task')"
+                class="p-2 rounded-xl hover:bg-slate-800 hover:text-white transition-colors" title="Create Task">
+                <i data-lucide="circle-plus"></i>
+            </button>
         </div>
         <div class="mt-auto">
             <button id="nav-settings" onclick="switchTab('settings')"
@@ -333,7 +346,8 @@
                         <span id="server-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
                         <span id="server-label">Offline Mode</span>
                     </div>
-                    <button class="text-slate-400 hover:text-slate-600 relative">
+                    <button onclick="showToast('que buscas? 🤨', 'success')"
+                        class="text-slate-400 hover:text-slate-600 relative" title="Notifications">
                         <i data-lucide="bell"></i>
                         <span class="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full"></span>
                     </button>
@@ -521,6 +535,199 @@
         </main>
     </div>
 
+    <!-- Container for Create Task View -->
+    <div id="view-create-task" class="hidden flex-1 flex-col overflow-hidden bg-slate-50 p-8">
+        <header class="mb-6 flex-shrink-0">
+            <h1 class="text-2xl font-bold text-slate-800">Create New Task</h1>
+            <p class="text-slate-500">Configure new task properties to generate AI matching recommendations and assign
+                translators.</p>
+        </header>
+
+        <div class="flex-1 overflow-y-auto min-h-0 pr-2">
+            <div class="max-w-4xl mx-auto bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+                <!-- Task ID Banner -->
+                <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Task Assignment
+                            ID</span>
+                        <p class="text-xs text-slate-500 mt-0.5">Automatically generated sequentially based on today's
+                            tasks.</p>
+                    </div>
+                    <span class="font-extrabold text-indigo-600 text-lg tracking-wider"
+                        id="create-task-id-lbl">TSK-WXX</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Client Selector Card -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Client
+                                Name</label>
+                            <span class="text-[10px] text-slate-400 font-bold" id="create-selected-client-lbl">No client
+                                selected</span>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="create-client-search" oninput="filterCreateClients()"
+                                placeholder="Search clients..."
+                                class="w-full bg-white border border-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div id="create-client-chips"
+                            class="flex gap-2 overflow-x-auto py-1 px-0.5 max-w-full no-scrollbar">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Task Type Selector Card -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Task
+                                Type</label>
+                            <span class="text-[10px] text-slate-400 font-bold" id="create-selected-type-lbl">No type
+                                selected</span>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="create-type-search" oninput="filterCreateTypes()"
+                                placeholder="Search task types..."
+                                class="w-full bg-white border border-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div id="create-type-chips"
+                            class="flex gap-2 overflow-x-auto py-1 px-0.5 max-w-full no-scrollbar">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Source Language Selector -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Source
+                                Language</label>
+                            <span class="text-[10px] text-slate-400 font-bold" id="create-selected-src-lbl">No source
+                                selected</span>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="create-src-search" oninput="filterCreateSrc()"
+                                placeholder="Search source languages..."
+                                class="w-full bg-white border border-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div id="create-src-chips"
+                            class="flex gap-2 overflow-x-auto py-1 px-0.5 max-w-full no-scrollbar">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Target Language Selector -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Target
+                                Language</label>
+                            <span class="text-[10px] text-slate-400 font-bold" id="create-selected-tgt-lbl">No target
+                                selected</span>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="create-tgt-search" oninput="filterCreateTgt()"
+                                placeholder="Search target languages..."
+                                class="w-full bg-white border border-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div id="create-tgt-chips"
+                            class="flex gap-2 overflow-x-auto py-1 px-0.5 max-w-full no-scrollbar">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Industry Selector -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Manufacturer
+                                Industry</label>
+                            <span class="text-[10px] text-slate-400 font-bold" id="create-selected-ind-lbl">No industry
+                                selected</span>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="create-ind-search" oninput="filterCreateInd()"
+                                placeholder="Search industries..."
+                                class="w-full bg-white border border-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div id="create-ind-chips"
+                            class="flex gap-2 overflow-x-auto py-1 px-0.5 max-w-full no-scrollbar">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Urgency Status Selector -->
+                    <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Urgency
+                            Status</label>
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" onclick="setCreateUrgency('normal')" id="btn-urgency-normal"
+                                class="urg-btn flex-1 py-2.5 border rounded-xl text-xs font-bold bg-indigo-600 border-indigo-600 text-white transition-all">Normal</button>
+                            <button type="button" onclick="setCreateUrgency('urgent')" id="btn-urgency-urgent"
+                                class="urg-btn flex-1 py-2.5 border rounded-xl text-xs font-bold bg-white border-slate-200 text-slate-600 hover:border-indigo-300 transition-all">Urgent</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hours & Dates Grid -->
+                <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-6 space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Forecast Hours Slider -->
+                        <div class="md:col-span-1 space-y-2.5">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Forecast
+                                    Hours</label>
+                                <span id="create-hours-lbl" class="font-bold text-indigo-600 text-sm">8h</span>
+                            </div>
+                            <input type="range" id="create-hours-slider" min="1" max="100" value="8"
+                                oninput="updateCreateHoursLabel(this.value)"
+                                class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2">
+                        </div>
+
+                        <!-- Start Date-Time -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Start Date &
+                                Time</label>
+                            <input type="datetime-local" id="create-start-date"
+                                class="w-full bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-700 font-semibold transition-all">
+                        </div>
+
+                        <!-- End Date-Time -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Deadline (End
+                                Date/Time)</label>
+                            <input type="datetime-local" id="create-end-date"
+                                class="w-full bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-700 font-semibold transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PM Notes Description -->
+                <div class="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">PM Notes &
+                        Instructions</label>
+                    <textarea id="create-pm-notes"
+                        placeholder="Write PM notes/instructions here (e.g. terminology requirements, glossaries, context)..."
+                        class="w-full h-24 bg-white border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-700 resize-none transition-all"></textarea>
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex justify-end pt-4">
+                    <button type="button" onclick="createTaskSubmit()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Create & Match Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Container for Settings View -->
     <!-- Settings View — Model Switcher -->
     <div id="view-settings" class="hidden flex-1 flex-col overflow-hidden bg-slate-50 p-8">
@@ -541,6 +748,25 @@
             <p class="text-sm text-slate-500">Start with: <code
                     class="bg-slate-100 px-2 py-0.5 rounded text-xs">python Backend/inference_server.py</code></p>
         </div>
+
+        <!-- UI Preferences card -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 max-w-2xl">
+            <h2 class="font-bold text-slate-700 flex items-center gap-2 mb-4">
+                <i data-lucide="volume-2" class="w-5 h-5 text-indigo-500"></i> UI Preferences
+            </h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-slate-700">Sound Effects</p>
+                    <p class="text-xs text-slate-400">Play pleasant synthesized sounds on completion, clicks, and
+                        warnings.</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="settings-toggle-sounds" checked onchange="toggleSoundFX(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
         <!-- Model cards -->
         <div id="model-cards" class="flex flex-row gap-4 overflow-x-auto pb-4 w-full">
             <div class="text-sm text-slate-400 text-center py-8 w-full">Start the inference server to see available
@@ -555,6 +781,166 @@
         lucide.createIcons();
 
         /* =====================================================================
+         * §0.5 — SOUND EFFECTS SYSTEM (Web Audio API Synthesizer)
+         * ===================================================================*/
+        const SoundFX = {
+            ctx: null,
+            init() {
+                if (this.ctx) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API not supported", e);
+                }
+            },
+            resume() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playClick() {
+                if (!AppState.soundEffects) return;
+                this.resume();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            },
+            playSuccess() {
+                if (!AppState.soundEffects) return;
+                this.resume();
+                if (!this.ctx) return;
+
+                const playNote = (freq, delay, duration) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+
+                    gain.gain.setValueAtTime(0.0, this.ctx.currentTime + delay);
+                    gain.gain.linearRampToValueAtTime(0.12, this.ctx.currentTime + delay + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + duration);
+                };
+
+                playNote(523.25, 0.0, 0.15); // C5
+                playNote(659.25, 0.08, 0.15); // E5
+                playNote(783.99, 0.16, 0.25); // G5
+                playNote(1046.50, 0.24, 0.35); // C6
+            },
+            playComplete() {
+                if (!AppState.soundEffects) return;
+                this.resume();
+                if (!this.ctx) return;
+
+                const playNote = (freq, delay, duration) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+
+                    gain.gain.setValueAtTime(0.0, this.ctx.currentTime + delay);
+                    gain.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + delay + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + duration);
+                };
+
+                playNote(523.25, 0.0, 0.18); // C5
+                playNote(659.25, 0.08, 0.18); // E5
+                playNote(783.99, 0.16, 0.22); // G5
+                playNote(987.77, 0.24, 0.35); // B5 (Major 7th chime)
+            },
+            playWarning() {
+                if (!AppState.soundEffects) return;
+                this.resume();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(120, this.ctx.currentTime + 0.2);
+
+                gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            },
+            playGrindr() {
+                if (!AppState.soundEffects) return;
+                this.resume();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                // Grindr notification style: a very rapid ascending pitch sweep using a triangle wave
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1300, this.ctx.currentTime + 0.12);
+
+                gain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.12, this.ctx.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            },
+            playClashRoyale() {
+                if (!AppState.soundEffects) return;
+                try {
+                    const audio = new Audio('Clash Royale Intro Sound Effect [Qu84tcGExSQ].mp3');
+                    audio.volume = 0.15;
+                    audio.play().catch(e => console.error("Audio playback failed:", e));
+                } catch (e) {
+                    console.error("Audio error:", e);
+                }
+            }
+        };
+
+        function toggleSoundFX(enabled) {
+            AppState.soundEffects = enabled;
+            localStorage.setItem('idisc_sounds_enabled', enabled);
+            if (enabled) {
+                SoundFX.playSuccess();
+            }
+        }
+
+        /* =====================================================================
          * §1 — STATE MANAGEMENT
          * ===================================================================*/
         const AppState = {
@@ -566,7 +952,8 @@
             clients: [],
             assignedTasks: [],
             constraints: { strictSchedule: true, strictIndustry: true, enforceWildcards: true },
-            loading: { tasks: false, recommendations: false }
+            loading: { tasks: false, recommendations: false },
+            soundEffects: true
         };
 
         /* =====================================================================
@@ -652,13 +1039,14 @@
          * §4 — NAVIGATION LOGIC
          * ===================================================================*/
         function switchTab(tabId) {
-            ['dashboard', 'tasks', 'translators', 'clients', 'settings'].forEach(id => {
+            SoundFX.playClick();
+            ['dashboard', 'tasks', 'translators', 'clients', 'settings', 'create-task'].forEach(id => {
                 const el = document.getElementById('view-' + id);
                 if (el) { el.classList.add('hidden'); el.classList.remove('flex') }
             });
             const activeView = document.getElementById('view-' + tabId);
             if (activeView) { activeView.classList.remove('hidden'); activeView.classList.add('flex') }
-            ['dashboard', 'tasks', 'translators', 'clients', 'settings'].forEach(id => {
+            ['dashboard', 'tasks', 'translators', 'clients', 'settings', 'create-task'].forEach(id => {
                 const btn = document.getElementById('nav-' + id);
                 if (btn) btn.className = id === tabId
                     ? "p-2 bg-slate-800 text-indigo-400 rounded-xl transition-colors"
@@ -670,7 +1058,382 @@
                 updateDashboardStats();
                 renderDashboardOverview();
             }
+            if (tabId === 'create-task') initCreateTaskView();
             setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        /* =====================================================================
+         * §4.5 — CREATE TASK VIEW & HELPERS
+         * ===================================================================*/
+        let _createTaskState = {
+            id: '',
+            type: 'Translation',
+            client: '',
+            source: '',
+            target: '',
+            industry: '',
+            hours: 8,
+            urgency: 'normal'
+        };
+
+        let _uniqueLangs = [];
+        let _uniqueIndustries = [];
+        let _uniqueTaskTypes = [];
+
+        function initCreateTaskView() {
+            // 1. Generate Task ID
+            _createTaskState.id = getNextTaskId();
+            document.getElementById('create-task-id-lbl').textContent = _createTaskState.id;
+
+            // Reset other state fields
+            _createTaskState.client = '';
+            _createTaskState.source = '';
+            _createTaskState.target = '';
+            _createTaskState.industry = '';
+            _createTaskState.hours = 8;
+            _createTaskState.urgency = 'normal';
+
+            document.getElementById('create-hours-slider').value = 8;
+            document.getElementById('create-hours-lbl').textContent = '8h';
+
+            // Reset selectors
+            document.getElementById('create-type-search').value = '';
+            setCreateTaskType('Translation');
+            setCreateUrgency('normal');
+
+            document.getElementById('create-client-search').value = '';
+            document.getElementById('create-src-search').value = '';
+            document.getElementById('create-tgt-search').value = '';
+            document.getElementById('create-ind-search').value = '';
+            document.getElementById('create-pm-notes').value = '';
+
+            // Reset labels
+            document.getElementById('create-selected-type-lbl').textContent = 'No type selected';
+            document.getElementById('create-selected-client-lbl').textContent = 'No client selected';
+            document.getElementById('create-selected-src-lbl').textContent = 'No source selected';
+            document.getElementById('create-selected-tgt-lbl').textContent = 'No target selected';
+            document.getElementById('create-selected-ind-lbl').textContent = 'No industry selected';
+
+            // Set default date selectors to today + tomorrow
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+            const formatDateLocal = d => {
+                const pad = n => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+            document.getElementById('create-start-date').value = formatDateLocal(now);
+            document.getElementById('create-end-date').value = formatDateLocal(tomorrow);
+
+            // 2. Populate lists if they aren't already cached
+            if (_uniqueLangs.length === 0) {
+                const langs = new Set();
+                (AppState.translators || []).forEach(tr => {
+                    if (tr.sourceLangs) tr.sourceLangs.forEach(l => langs.add(l));
+                    else if (tr.source) langs.add(tr.source);
+                    if (tr.targetLangs) tr.targetLangs.forEach(l => langs.add(l));
+                    else if (tr.target) langs.add(tr.target);
+                });
+                _uniqueLangs = Array.from(langs).sort();
+            }
+
+            if (_uniqueIndustries.length === 0) {
+                const inds = new Set();
+                (AppState.clients || []).forEach(cl => {
+                    if (cl.industry) inds.add(cl.industry);
+                    if (cl.sector) inds.add(cl.sector);
+                });
+                _uniqueIndustries = Array.from(inds).sort();
+            }
+
+            if (_uniqueTaskTypes.length === 0) {
+                const types = new Set();
+                (AppState.translators || []).forEach(tr => {
+                    if (tr.taskTypes) tr.taskTypes.forEach(t => types.add(t));
+                });
+                (AppState.tasks || []).forEach(t => {
+                    if (t.type) types.add(t.type);
+                });
+
+                // Add all task types defined in the documentation
+                const docTypes = [
+                    'DTP',
+                    'Engineering',
+                    'LanguageLead',
+                    'Management',
+                    'Miscellaneous',
+                    'PostEditing',
+                    'ProofReading',
+                    'Spotcheck',
+                    'TEST',
+                    'Training',
+                    'Translation'
+                ];
+                docTypes.forEach(t => types.add(t));
+
+                _uniqueTaskTypes = Array.from(types).filter(Boolean).sort();
+            }
+
+            // Render chips
+            renderCreateClientChips();
+            renderCreateSrcChips();
+            renderCreateTgtChips();
+            renderCreateIndChips();
+            renderCreateTypeChips();
+        }
+
+        function getNextTaskId() {
+            const count = AppState.tasks.filter(t => t.id && t.id.startsWith('TSK-W')).length;
+            return `TSK-W${String(count + 1).padStart(2, '0')}`;
+        }
+
+        function renderCreateClientChips(searchTerm = '') {
+            const container = document.getElementById('create-client-chips');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let list = AppState.clients || [];
+            if (searchTerm) {
+                list = list.filter(cl => cl.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+
+            list.slice(0, 20).forEach(cl => {
+                const isSelected = _createTaskState.client === cl.name;
+                const activeClass = isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="selectCreateClient('${cl.name.replace(/'/g, "\\'")}')" class="px-3 py-1.5 border rounded-xl text-xs font-semibold cursor-pointer transition-all flex-shrink-0 ${activeClass}">
+                        ${cl.name}
+                    </div>`);
+            });
+
+            if (list.length > 20) {
+                container.insertAdjacentHTML('beforeend', `<span class="text-[10px] text-slate-400 self-center px-2 flex-shrink-0">and ${list.length - 20} more... search to narrow</span>`);
+            }
+        }
+
+        function selectCreateClient(name) {
+            _createTaskState.client = name;
+            document.getElementById('create-selected-client-lbl').innerHTML = `<span class="text-indigo-600 font-bold">Selected:</span> ${name}`;
+
+            // Auto-fill industry
+            const client = (AppState.clients || []).find(c => c.name === name);
+            if (client && client.industry) {
+                selectCreateIndustry(client.industry);
+            }
+
+            renderCreateClientChips(document.getElementById('create-client-search').value);
+        }
+
+        function filterCreateClients() {
+            const val = document.getElementById('create-client-search').value;
+            renderCreateClientChips(val);
+        }
+
+        function renderCreateSrcChips(searchTerm = '') {
+            const container = document.getElementById('create-src-chips');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let list = _uniqueLangs;
+            if (searchTerm) {
+                list = list.filter(l => l.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+
+            list.slice(0, 20).forEach(l => {
+                const isSelected = _createTaskState.source === l;
+                const activeClass = isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="selectCreateSrc('${l.replace(/'/g, "\\'")}')" class="px-3 py-1.5 border rounded-xl text-xs font-semibold cursor-pointer transition-all flex-shrink-0 ${activeClass}">
+                        ${l}
+                    </div>`);
+            });
+            if (list.length > 20) {
+                container.insertAdjacentHTML('beforeend', `<span class="text-[10px] text-slate-400 self-center px-2 flex-shrink-0">+${list.length - 20} more</span>`);
+            }
+        }
+
+        function selectCreateSrc(lang) {
+            _createTaskState.source = lang;
+            document.getElementById('create-selected-src-lbl').innerHTML = `<span class="text-indigo-600 font-bold">Selected:</span> ${lang}`;
+            renderCreateSrcChips(document.getElementById('create-src-search').value);
+        }
+
+        function filterCreateSrc() {
+            const val = document.getElementById('create-src-search').value;
+            renderCreateSrcChips(val);
+        }
+
+        function renderCreateTgtChips(searchTerm = '') {
+            const container = document.getElementById('create-tgt-chips');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let list = _uniqueLangs;
+            if (searchTerm) {
+                list = list.filter(l => l.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+
+            list.slice(0, 20).forEach(l => {
+                const isSelected = _createTaskState.target === l;
+                const activeClass = isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="selectCreateTgt('${l.replace(/'/g, "\\'")}')" class="px-3 py-1.5 border rounded-xl text-xs font-semibold cursor-pointer transition-all flex-shrink-0 ${activeClass}">
+                        ${l}
+                    </div>`);
+            });
+            if (list.length > 20) {
+                container.insertAdjacentHTML('beforeend', `<span class="text-[10px] text-slate-400 self-center px-2 flex-shrink-0">+${list.length - 20} more</span>`);
+            }
+        }
+
+        function selectCreateTgt(lang) {
+            _createTaskState.target = lang;
+            document.getElementById('create-selected-tgt-lbl').innerHTML = `<span class="text-indigo-600 font-bold">Selected:</span> ${lang}`;
+            renderCreateTgtChips(document.getElementById('create-tgt-search').value);
+        }
+
+        function filterCreateTgt() {
+            const val = document.getElementById('create-tgt-search').value;
+            renderCreateTgtChips(val);
+        }
+
+        function renderCreateIndChips(searchTerm = '') {
+            const container = document.getElementById('create-ind-chips');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let list = _uniqueIndustries;
+            if (searchTerm) {
+                list = list.filter(ind => ind.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+
+            list.slice(0, 20).forEach(ind => {
+                const isSelected = _createTaskState.industry === ind;
+                const activeClass = isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="selectCreateIndustry('${ind.replace(/'/g, "\\'")}')" class="px-3 py-1.5 border rounded-xl text-xs font-semibold cursor-pointer transition-all flex-shrink-0 ${activeClass}">
+                        ${ind}
+                    </div>`);
+            });
+            if (list.length > 20) {
+                container.insertAdjacentHTML('beforeend', `<span class="text-[10px] text-slate-400 self-center px-2 flex-shrink-0">+${list.length - 20} more</span>`);
+            }
+        }
+
+        function selectCreateIndustry(ind) {
+            _createTaskState.industry = ind;
+            document.getElementById('create-selected-ind-lbl').innerHTML = `<span class="text-indigo-600 font-bold">Selected:</span> ${ind}`;
+            renderCreateIndChips(document.getElementById('create-ind-search').value);
+        }
+
+        function filterCreateInd() {
+            const val = document.getElementById('create-ind-search').value;
+            renderCreateIndChips(val);
+        }
+
+        function renderCreateTypeChips(searchTerm = '') {
+            const container = document.getElementById('create-type-chips');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let list = _uniqueTaskTypes;
+            if (searchTerm) {
+                list = list.filter(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+
+            list.slice(0, 20).forEach(t => {
+                const isSelected = _createTaskState.type === t;
+                const activeClass = isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="setCreateTaskType('${t.replace(/'/g, "\\'")}')" class="px-3 py-1.5 border rounded-xl text-xs font-semibold cursor-pointer transition-all flex-shrink-0 ${activeClass}">
+                        ${t}
+                    </div>`);
+            });
+            if (list.length > 20) {
+                container.insertAdjacentHTML('beforeend', `<span class="text-[10px] text-slate-400 self-center px-2 flex-shrink-0">+${list.length - 20} more</span>`);
+            }
+        }
+
+        function setCreateTaskType(type) {
+            _createTaskState.type = type;
+            const lbl = document.getElementById('create-selected-type-lbl');
+            if (lbl) lbl.innerHTML = `<span class="text-indigo-600 font-bold">Selected:</span> ${type}`;
+
+            const searchInput = document.getElementById('create-type-search');
+            renderCreateTypeChips(searchInput ? searchInput.value : '');
+        }
+
+        function filterCreateTypes() {
+            const val = document.getElementById('create-type-search').value;
+            renderCreateTypeChips(val);
+        }
+
+        function setCreateUrgency(urgency) {
+            _createTaskState.urgency = urgency;
+            document.querySelectorAll('.urg-btn').forEach(btn => {
+                btn.className = 'urg-btn flex-1 py-2.5 border rounded-xl text-xs font-bold transition-all';
+                if (btn.id === `btn-urgency-${urgency}`) {
+                    btn.classList.add('bg-indigo-600', 'border-indigo-600', 'text-white');
+                } else {
+                    btn.classList.add('bg-white', 'border-slate-200', 'text-slate-600', 'hover:border-indigo-300');
+                }
+            });
+        }
+
+        function updateCreateHoursLabel(val) {
+            _createTaskState.hours = parseInt(val);
+            document.getElementById('create-hours-lbl').textContent = val + 'h';
+        }
+
+        function formatDateTimeToCsv(dtStr) {
+            if (!dtStr) return 'TBD';
+            const d = new Date(dtStr);
+            if (isNaN(d.getTime())) return 'TBD';
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+        }
+
+        function createTaskSubmit() {
+            if (!_createTaskState.client) { showToast('Please select a client.', 'error'); return; }
+            if (!_createTaskState.source) { showToast('Please select a source language.', 'error'); return; }
+            if (!_createTaskState.target) { showToast('Please select a target language.', 'error'); return; }
+            if (!_createTaskState.industry) { showToast('Please select an industry.', 'error'); return; }
+
+            const startVal = document.getElementById('create-start-date').value;
+            const endVal = document.getElementById('create-end-date').value;
+            if (!startVal) { showToast('Please set a start date.', 'error'); return; }
+            if (!endVal) { showToast('Please set a deadline date.', 'error'); return; }
+
+            const notesVal = document.getElementById('create-pm-notes').value.trim();
+
+            const formattedStart = formatDateTimeToCsv(startVal);
+            const formattedEnd = formatDateTimeToCsv(endVal);
+
+            const newTask = {
+                id: _createTaskState.id,
+                type: _createTaskState.type,
+                source: _createTaskState.source,
+                target: _createTaskState.target,
+                client: _createTaskState.client,
+                industry: _createTaskState.industry,
+                forecast: _createTaskState.hours + 'h',
+                deadline: formattedEnd,
+                status: _createTaskState.urgency,
+                description: notesVal || 'No PM notes provided.',
+                recommendations: [],
+                businessLift: null
+            };
+
+            newTask.recommendations = computeRecommendations(newTask);
+            newTask.businessLift = computeBusinessLift(newTask, newTask.recommendations);
+
+            AppState.tasks.unshift(newTask);
+            renderTaskList();
+            showToast(`Task ${newTask.id} successfully created and added to pending tasks.`, 'success');
+
+            switchTab('tasks');
+            selectTask(newTask.id);
         }
 
         function updateDashboardStats() {
@@ -1099,6 +1862,7 @@
         }
 
         function selectTranslator(id) {
+            SoundFX.playClick();
             AppState.activeTranslatorId = id; renderTranslatorsList();
             const tr = AppState.translators.find(t => t.id === id);
             const wb = tr.workerType === 'Internal' ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="building" class="w-3 h-3"></i> Internal</span>` : `<span class="bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="globe" class="w-3 h-3"></i> Third-Party</span>`;
@@ -1824,6 +2588,7 @@
         }
 
         async function selectTask(taskId) {
+            SoundFX.playClick();
             AppState.activeTaskId = taskId;
             renderTaskList();
             await renderMainContent(taskId);
@@ -1933,6 +2698,19 @@
                 </button>`;
             container.appendChild(toast);
             lucide.createIcons();
+
+            // Play synthesized sound effects based on notification trigger
+            if (type === 'error') {
+                SoundFX.playWarning();
+            } else if (type === 'success') {
+                if (message.includes('completed!')) {
+                    SoundFX.playComplete();
+                } else if (message.includes('que buscas?')) {
+                    SoundFX.playClashRoyale();
+                } else {
+                    SoundFX.playSuccess();
+                }
+            }
             setTimeout(() => {
                 if (document.body.contains(toast)) {
                     toast.classList.replace('toast-enter', 'toast-exit');
@@ -2015,6 +2793,14 @@
          * §13 — ASYNC BOOTSTRAP (Application Entry Point)
          * ===================================================================*/
         (async function initApp() {
+            // Restore sound effects preference from localStorage
+            const savedSoundPref = localStorage.getItem('idisc_sounds_enabled');
+            if (savedSoundPref !== null) {
+                AppState.soundEffects = savedSoundPref === 'true';
+            }
+            const soundEl = document.getElementById('settings-toggle-sounds');
+            if (soundEl) soundEl.checked = AppState.soundEffects;
+
             // 1. Auto-detect inference server
             try {
                 const models = await fetch(`${INFERENCE_URL}/models`, { signal: AbortSignal.timeout(2000) }).then(r => r.json());
