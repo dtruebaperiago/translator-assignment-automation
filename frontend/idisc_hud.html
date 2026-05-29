@@ -186,23 +186,32 @@
 <body class="bg-slate-50 text-slate-800 font-sans h-screen w-full flex overflow-hidden">
 
     <!-- ⚠️ file:// protocol warning — hidden by default, shown via JS if needed -->
-    <div id="file-protocol-warning" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.92);align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:540px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+    <div id="file-protocol-warning"
+        style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.92);align-items:center;justify-content:center;">
+        <div
+            style="background:#fff;border-radius:16px;padding:40px 48px;max-width:540px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.4);">
             <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
-            <h2 style="font-size:22px;font-weight:800;color:#1e293b;margin-bottom:10px;">Cannot load data over <code style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:18px;">file://</code></h2>
+            <h2 style="font-size:22px;font-weight:800;color:#1e293b;margin-bottom:10px;">Cannot load data over <code
+                    style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:18px;">file://</code></h2>
             <p style="color:#64748b;margin-bottom:24px;line-height:1.6;">
                 Browsers block local file requests for security reasons.<br>
                 You need to serve this app through a local HTTP server.
             </p>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;text-align:left;margin-bottom:24px;">
-                <p style="font-size:13px;font-weight:700;color:#475569;margin-bottom:10px;">▶ QUICKEST FIX — run in your terminal:</p>
-                <code style="display:block;background:#0f172a;color:#7dd3fc;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.8;">
+            <div
+                style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;text-align:left;margin-bottom:24px;">
+                <p style="font-size:13px;font-weight:700;color:#475569;margin-bottom:10px;">▶ QUICKEST FIX — run in your
+                    terminal:</p>
+                <code
+                    style="display:block;background:#0f172a;color:#7dd3fc;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.8;">
                     cd frontend<br>
                     python serve.py
                 </code>
-                <p style="font-size:12px;color:#94a3b8;margin-top:10px;">Then open <strong>http://localhost:8080/idisc_hud.html</strong> in your browser.</p>
+                <p style="font-size:12px;color:#94a3b8;margin-top:10px;">Then open
+                    <strong>http://localhost:8080/idisc_hud.html</strong> in your browser.
+                </p>
             </div>
-            <p style="font-size:12px;color:#94a3b8;">See <strong>frontend/README.md</strong> for full setup instructions.</p>
+            <p style="font-size:12px;color:#94a3b8;">See <strong>frontend/README.md</strong> for full setup
+                instructions.</p>
         </div>
     </div>
     <script>
@@ -251,28 +260,29 @@
             <h1 class="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
             <p class="text-slate-500">System status and key performance metrics.</p>
         </header>
-        <div class="grid grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center gap-3 text-indigo-500 mb-2"><i data-lucide="list-todo"></i> <span
                         class="font-bold text-slate-700">Pending Tasks</span></div>
-                <div class="text-3xl font-bold text-slate-800">5</div>
+                <div id="dash-pending" class="text-3xl font-bold text-slate-800">—</div>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center gap-3 text-emerald-500 mb-2"><i data-lucide="users"></i> <span
-                        class="font-bold text-slate-700">Active Translators</span></div>
-                <div class="text-3xl font-bold text-slate-800">24</div>
+                        class="font-bold text-slate-700">Available Translators</span></div>
+                <div id="dash-available" class="text-3xl font-bold text-slate-800">—</div>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex items-center gap-3 text-amber-500 mb-2"><i data-lucide="trending-up"></i> <span
-                        class="font-bold text-slate-700">On-Time Delivery</span></div>
-                <div class="text-3xl font-bold text-slate-800">98.2%</div>
+                <div class="flex items-center gap-3 text-rose-500 mb-2"><i data-lucide="user-check"></i> <span
+                        class="font-bold text-slate-700">Assigned</span></div>
+                <div id="dash-assigned" class="text-3xl font-bold text-slate-800">—</div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 text-amber-500 mb-2"><i data-lucide="star"></i> <span
+                        class="font-bold text-slate-700">Avg Quality (EMA)</span></div>
+                <div id="dash-quality" class="text-3xl font-bold text-slate-800">—</div>
             </div>
         </div>
-        <div
-            class="bg-white flex-1 rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-slate-400">
-            <i data-lucide="bar-chart-3" class="w-12 h-12 mb-4 opacity-50"></i>
-            <p>Historical performance charts and margins will load here.</p>
-        </div>
+        <div id="dashboard-content-area" class="flex-1 flex flex-col min-h-0 overflow-y-auto"></div>
     </div>
 
     <!-- Container for Tasks View -->
@@ -294,16 +304,16 @@
                 </div>
                 <div class="mt-4 relative">
                     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" placeholder="Search tasks..."
+                    <input type="text" id="task-search" placeholder="Search tasks..."
                         class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 </div>
                 <div class="flex gap-2 mt-3">
-                    <span
+                    <span id="task-tab-all"
                         class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100">All
-                        (5)</span>
-                    <span
-                        class="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md cursor-pointer hover:bg-slate-200">Urgent
-                        (2)</span>
+                        (—)</span>
+                    <span id="task-tab-urgent"
+                        class="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100">Urgent
+                        (—)</span>
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3 space-y-2" id="task-list">
@@ -318,7 +328,8 @@
                 <h1 class="font-semibold text-slate-700">AI Assignment Copilot</h1>
                 <div class="flex items-center gap-4">
                     <!-- Model server status badge -->
-                    <div id="server-badge" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">
+                    <div id="server-badge"
+                        class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">
                         <span id="server-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
                         <span id="server-label">Offline Mode</span>
                     </div>
@@ -327,8 +338,10 @@
                         <span class="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full"></span>
                     </button>
                     <div class="flex items-center gap-2 border-l border-slate-200 pl-4">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">PM</div>
-                        <span class="text-sm font-medium text-slate-700">Sarah Jenkins</span>
+                        <div
+                            class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                            GG</div>
+                        <span class="text-sm font-medium text-slate-700">Gerard Grivé</span>
                     </div>
                 </div>
             </header>
@@ -352,10 +365,112 @@
                     <i data-lucide="users" class="w-5 h-5 text-indigo-500"></i>
                     Translators Database
                 </h2>
-                <div class="mt-4 relative">
-                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" placeholder="Search roster..."
-                        class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                <div class="mt-4 flex gap-2">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                        <input type="text" id="tr-search-input" placeholder="Search roster..."
+                            class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                    <button id="tr-filter-btn" onclick="toggleTrFilterPanel()"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg transition-colors flex items-center justify-center relative"
+                        title="Advanced Filters">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                        <span id="tr-filter-indicator"
+                            class="hidden absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-600 rounded-full"></span>
+                    </button>
+                </div>
+                <!-- Collapsible Advanced Filter Panel -->
+                <div id="tr-filter-panel"
+                    class="hidden mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4 text-xs text-slate-700 max-h-[380px] overflow-y-auto">
+                    <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <span class="font-bold text-slate-800">Advanced Filters</span>
+                        <button onclick="clearTrFilters()"
+                            class="text-indigo-600 hover:text-indigo-800 font-semibold">Clear All</button>
+                    </div>
+
+                    <!-- Worker Type & Roles -->
+                    <div>
+                        <span class="block font-bold text-[10px] uppercase text-slate-400 mb-1.5">Worker Type /
+                            Status</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-internal" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Internal</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-thirdparty" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Third-Party</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-new" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>NEW Roster</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-specialist" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Specialist</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Availability Status -->
+                    <div>
+                        <span class="block font-bold text-[10px] uppercase text-slate-400 mb-1.5">Availability</span>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-available" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Available</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="tr-f-assigned" onchange="applyTrFilters()"
+                                    class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <span>Assigned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Quality EMA Slider -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-[10px] uppercase text-slate-400">Min Quality EMA</span>
+                            <span id="tr-f-quality-lbl" class="font-bold text-indigo-600">1.0</span>
+                        </div>
+                        <input type="range" id="tr-f-quality" min="1" max="10" step="1" value="1"
+                            oninput="updateTrQualityLabel(this.value); applyTrFilters()"
+                            class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    </div>
+
+                    <!-- Source Languages (Multi-select) -->
+                    <div>
+                        <label class="block font-bold text-[10px] uppercase text-slate-400 mb-1">Source
+                            Languages</label>
+                        <select id="tr-f-source" multiple size="3" onchange="applyTrFilters()"
+                            class="w-full bg-white border border-slate-200 rounded-lg p-1 outline-none focus:ring-1 focus:ring-indigo-500 text-xs">
+                        </select>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Hold Ctrl to select multiple</p>
+                    </div>
+
+                    <!-- Target Languages (Multi-select) -->
+                    <div>
+                        <label class="block font-bold text-[10px] uppercase text-slate-400 mb-1">Target
+                            Languages</label>
+                        <select id="tr-f-target" multiple size="3" onchange="applyTrFilters()"
+                            class="w-full bg-white border border-slate-200 rounded-lg p-1 outline-none focus:ring-1 focus:ring-indigo-500 text-xs">
+                        </select>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Hold Ctrl to select multiple</p>
+                    </div>
+
+                    <!-- Task Types (Multi-select) -->
+                    <div>
+                        <label class="block font-bold text-[10px] uppercase text-slate-400 mb-1">Task Types</label>
+                        <select id="tr-f-tasktypes" multiple size="3" onchange="applyTrFilters()"
+                            class="w-full bg-white border border-slate-200 rounded-lg p-1 outline-none focus:ring-1 focus:ring-indigo-500 text-xs">
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3 space-y-2" id="translator-list">
@@ -383,6 +498,11 @@
                     <i data-lucide="building-2" class="w-5 h-5 text-indigo-500"></i>
                     Clients Database
                 </h2>
+                <div class="mt-4 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" placeholder="Search clients..."
+                        class="w-full bg-slate-100 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-3 space-y-2" id="client-list">
                 <!-- Injected via JS -->
@@ -406,19 +526,25 @@
     <div id="view-settings" class="hidden flex-1 flex-col overflow-hidden bg-slate-50 p-8">
         <header class="mb-8">
             <h1 class="text-2xl font-bold text-slate-800">System Settings</h1>
-            <p class="text-slate-500">Switch between trained Dual-Tower MLP models. Changes apply immediately to new recommendations.</p>
+            <p class="text-slate-500">Switch between trained Dual-Tower MLP models. Changes apply immediately to new
+                recommendations.</p>
         </header>
         <!-- Server status card -->
-        <div id="settings-server-card" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 max-w-2xl">
+        <div id="settings-server-card"
+            class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6 max-w-2xl">
             <div class="flex items-center justify-between mb-2">
-                <h2 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="server" class="w-4 h-4 text-indigo-500"></i> Inference Server</h2>
-                <span id="settings-server-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">Checking…</span>
+                <h2 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="server"
+                        class="w-4 h-4 text-indigo-500"></i> Inference Server</h2>
+                <span id="settings-server-badge"
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">Checking…</span>
             </div>
-            <p class="text-sm text-slate-500">Start with: <code class="bg-slate-100 px-2 py-0.5 rounded text-xs">python Backend/inference_server.py</code></p>
+            <p class="text-sm text-slate-500">Start with: <code
+                    class="bg-slate-100 px-2 py-0.5 rounded text-xs">python Backend/inference_server.py</code></p>
         </div>
         <!-- Model cards -->
-        <div id="model-cards" class="grid grid-cols-1 gap-4 max-w-2xl">
-            <div class="text-sm text-slate-400 text-center py-8">Start the inference server to see available models.</div>
+        <div id="model-cards" class="flex flex-row gap-4 overflow-x-auto pb-4 w-full">
+            <div class="text-sm text-slate-400 text-center py-8 w-full">Start the inference server to see available
+                models.</div>
         </div>
     </div>
 
@@ -438,6 +564,7 @@
             tasks: [],
             translators: [],
             clients: [],
+            assignedTasks: [],
             constraints: { strictSchedule: true, strictIndustry: true, enforceWildcards: true },
             loading: { tasks: false, recommendations: false }
         };
@@ -478,6 +605,10 @@
             async fetchRecommendations(taskId, constraints = {}) {
                 const task = AppState.tasks.find(t => t.id === taskId);
                 if (API_BASE && task) {
+                    const assignedNames = (AppState.translators || [])
+                        .filter(t => t.assigned === 1)
+                        .map(t => t.name);
+
                     // Send full task fields so the server can build feature vectors
                     return this._fetch(`${API_BASE}/tasks/${taskId}/recommend`, {
                         method: 'POST',
@@ -486,11 +617,17 @@
                             type: task.type, forecast: task.forecast,
                             client: task.client, industry: task.industry,
                             description: task.description,
+                            assigned_translators: assignedNames,
                             ...constraints
                         })
                     });
                 }
-                return task ? { recommendations: task.recommendations || [], businessLift: task.businessLift || null } : { recommendations: [], businessLift: null };
+                if (task) {
+                    const recs = computeRecommendations(task);
+                    const lift = computeBusinessLift(task, recs);
+                    return { recommendations: recs, businessLift: lift };
+                }
+                return { recommendations: [], businessLift: null };
             },
 
             async fetchTranslators() {
@@ -529,33 +666,432 @@
             });
             if (tabId === 'translators') loadAndRenderTranslators();
             if (tabId === 'clients') loadAndRenderClients();
+            if (tabId === 'dashboard') {
+                updateDashboardStats();
+                renderDashboardOverview();
+            }
             setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        function updateDashboardStats() {
+            const trs = AppState.translators || [];
+            const pending = AppState.tasks.length;
+            const available = trs.filter(t => !t.assigned).length;
+            const assigned = trs.filter(t => t.assigned).length;
+            const qScores = trs.map(t => t.rollingQualityEma || t.quality || 0).filter(q => q > 0);
+            const avgQ = qScores.length ? (qScores.reduce((a, b) => a + b, 0) / qScores.length).toFixed(1) : '—';
+            const dp = document.getElementById('dash-pending'); if (dp) dp.textContent = pending;
+            const da = document.getElementById('dash-available'); if (da) da.textContent = available;
+            const ds = document.getElementById('dash-assigned'); if (ds) ds.textContent = assigned;
+            const dq = document.getElementById('dash-quality'); if (dq) dq.textContent = avgQ + ' / 10';
+        }
+
+        function renderDashboardOverview() {
+            const container = document.getElementById('dashboard-content-area');
+            if (!container) return;
+
+            const assigned = AppState.assignedTasks || [];
+            if (assigned.length === 0) {
+                container.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[300px]">
+                        <i data-lucide="clipboard-list" class="w-12 h-12 mb-4 opacity-50 text-indigo-500"></i>
+                        <p class="text-lg font-medium text-slate-700">No active assignments</p>
+                        <p class="text-sm text-slate-400 mt-1 mb-4 text-center">Go to the Tasks tab to assign pending tasks using the AI Assignment Copilot.</p>
+                        <button onclick="switchTab('tasks')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i> View Pending Tasks
+                        </button>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            // Calculate worker type split
+            let internalCount = 0;
+            let thirdPartyCount = 0;
+            assigned.forEach(task => {
+                const tr = AppState.translators.find(t => t.name.toLowerCase().trim() === task.translator.toLowerCase().trim());
+                const type = tr ? tr.workerType : 'Third-Party';
+                if (type === 'Internal') {
+                    internalCount++;
+                } else {
+                    thirdPartyCount++;
+                }
+            });
+            const totalCount = internalCount + thirdPartyCount;
+
+            // Generate donut chart HTML
+            let donutChartHtml = '';
+            if (totalCount > 0) {
+                const internalPct = Math.round((internalCount / totalCount) * 100);
+                const thirdPartyPct = Math.round((thirdPartyCount / totalCount) * 100);
+
+                donutChartHtml = `
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col items-center">
+                    <h3 class="font-bold text-slate-800 text-sm mb-4 self-start flex items-center gap-1.5">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> Translator Split
+                    </h3>
+                    <div class="relative w-40 h-40 flex items-center justify-center mb-6">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <!-- Background Circle -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f1f5f9" stroke-width="4.5"></circle>
+                            <!-- Internal Segment (Indigo) -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#6366f1" stroke-width="4.5"
+                                stroke-dasharray="${internalPct} 100" stroke-dashoffset="0"></circle>
+                            <!-- Third-Party Segment (Pink) -->
+                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#ec4899" stroke-width="4.5"
+                                stroke-dasharray="${thirdPartyPct} 100" stroke-dashoffset="-${internalPct}"></circle>
+                        </svg>
+                        <div class="absolute flex flex-col items-center justify-center">
+                            <span class="text-2xl font-black text-slate-800">${totalCount}</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active</span>
+                        </div>
+                    </div>
+                    <div class="w-full space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                                <span class="text-slate-600 font-medium">Internal</span>
+                            </div>
+                            <span class="font-bold text-slate-800">${internalCount} (${internalPct}%)</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-pink-500"></span>
+                                <span class="text-slate-600 font-medium">Third-Party</span>
+                            </div>
+                            <span class="font-bold text-slate-800">${thirdPartyCount} (${thirdPartyPct}%)</span>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                donutChartHtml = `
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[260px] text-slate-400">
+                    <i data-lucide="pie-chart" class="w-8 h-8 mb-2 opacity-50"></i>
+                    <p class="text-xs">No active assignments to display</p>
+                </div>`;
+            }
+
+            // Render active work cards in a grid layout
+            const cardsHtml = assigned.map(task => {
+                // Calculate progress based on real hours (1 hour = 3600000ms)
+                const hours = parseFloat(task.forecast) || 8;
+                const elapsedMs = Date.now() - task.assignedAt;
+                const elapsedHours = elapsedMs / (1000 * 60 * 60);
+
+                let pct = Math.min(Math.round((elapsedHours / hours) * 100), 99);
+                if (pct < 0) pct = 0;
+
+                const barColor = pct > 90 ? 'bg-amber-500' : 'bg-indigo-600';
+
+                // Formatted assignment time
+                const assignedTimeStr = new Date(task.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden fade-in-up">
+                    <div class="absolute top-0 right-0 h-1.5 w-full bg-slate-100">
+                        <div class="h-full ${barColor}" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${task.id}</span>
+                            <h3 class="font-bold text-slate-800 text-base leading-snug mt-0.5">${task.client}</h3>
+                            <p class="text-xs text-slate-500 mt-1">${task.type} · ${task.source} &rarr; ${task.target}</p>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-xs text-slate-400">Assigned at</span>
+                            <span class="text-xs font-semibold text-slate-700">${assignedTimeStr}</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                                ${task.translator.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 leading-none">${task.translator}</p>
+                                <p class="text-[10px] text-slate-400 mt-1">Assigned Translator</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-700">${task.forecast}</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Duration</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center text-xs mb-1.5">
+                            <span class="text-slate-500 font-medium flex items-center gap-1.5">
+                                <span class="relative flex h-2 w-2">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                Working...
+                            </span>
+                            <span class="font-bold text-slate-700">${pct}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-4">
+                            <div class="h-full ${barColor} rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                        <button onclick="completeTask('${task.id}')" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Mark as Completed
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="flex flex-col xl:flex-row gap-6 items-start">
+                    <!-- Left: Progression -->
+                    <div class="flex-1 w-full">
+                        <div class="mb-4 flex items-center gap-2">
+                            <div class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="activity" class="w-5 h-5"></i></div>
+                            <h2 class="text-lg font-bold text-slate-800">Active Work Progression</h2>
+                            <span class="text-sm text-slate-400 ml-2">Real-time status tracking for translators assigned by Gerard Grivé.</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${cardsHtml}
+                        </div>
+                    </div>
+                    <!-- Right: Donut Chart -->
+                    <div class="w-full xl:w-80 flex-shrink-0">
+                        ${donutChartHtml}
+                    </div>
+                </div>`;
+
+            lucide.createIcons();
         }
 
         /* =====================================================================
          * §5 — TRANSLATORS VIEW (983 real translators, with search)
          * ===================================================================*/
         let _trSearchTerm = '';
+        let _trFilterMode = 'all'; // 'all' | 'available' | 'assigned'
         async function loadAndRenderTranslators() {
             AppState.translators = await DataService.fetchTranslators();
+            restoreAssignments();
+            populateFilterOptions();
             renderTranslatorsList();
-            const si = document.querySelector('#view-translators input[type="text"]');
+            const si = document.getElementById('tr-search-input');
             if (si) si.oninput = e => { _trSearchTerm = e.target.value.toLowerCase(); renderTranslatorsList(); };
+        }
+
+        function toggleTrFilterPanel() {
+            const panel = document.getElementById('tr-filter-panel');
+            if (panel) {
+                panel.classList.toggle('hidden');
+                const btn = document.getElementById('tr-filter-btn');
+                if (!panel.classList.contains('hidden')) {
+                    btn.classList.replace('bg-slate-100', 'bg-indigo-50');
+                    btn.classList.replace('text-slate-600', 'text-indigo-600');
+                } else {
+                    btn.classList.replace('bg-indigo-50', 'bg-slate-100');
+                    btn.classList.replace('text-indigo-600', 'text-slate-600');
+                }
+            }
+        }
+
+        function updateTrQualityLabel(val) {
+            const lbl = document.getElementById('tr-f-quality-lbl');
+            if (lbl) {
+                lbl.textContent = parseFloat(val).toFixed(1);
+            }
+        }
+
+        function clearTrFilters() {
+            const ids = ['tr-f-internal', 'tr-f-thirdparty', 'tr-f-new', 'tr-f-specialist', 'tr-f-available', 'tr-f-assigned'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.checked = false;
+            });
+            const q = document.getElementById('tr-f-quality');
+            if (q) { q.value = 1; updateTrQualityLabel(1); }
+
+            const selects = ['tr-f-source', 'tr-f-target', 'tr-f-tasktypes'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                if (sel) {
+                    for (let i = 0; i < sel.options.length; i++) {
+                        sel.options[i].selected = false;
+                    }
+                }
+            });
+            applyTrFilters();
+        }
+
+        function getAdvancedFilterState() {
+            const getValue = id => {
+                const el = document.getElementById(id);
+                return el ? el.checked : false;
+            };
+            const getSelected = id => {
+                const sel = document.getElementById(id);
+                if (!sel) return [];
+                return Array.from(sel.selectedOptions).map(opt => opt.value);
+            };
+            const q = document.getElementById('tr-f-quality');
+            return {
+                internal: getValue('tr-f-internal'),
+                thirdparty: getValue('tr-f-thirdparty'),
+                new: getValue('tr-f-new'),
+                specialist: getValue('tr-f-specialist'),
+                available: getValue('tr-f-available'),
+                assigned: getValue('tr-f-assigned'),
+                minQuality: q ? parseFloat(q.value) : 1.0,
+                sourceLangs: getSelected('tr-f-source'),
+                targetLangs: getSelected('tr-f-target'),
+                taskTypes: getSelected('tr-f-tasktypes')
+            };
+        }
+
+        function applyTrFilters() {
+            renderTranslatorsList();
+        }
+
+        function populateFilterOptions() {
+            const trs = AppState.translators || [];
+            const sources = new Set();
+            const targets = new Set();
+            const taskTypes = new Set();
+
+            trs.forEach(tr => {
+                if (tr.sourceLangs) tr.sourceLangs.forEach(l => sources.add(l));
+                else if (tr.source) sources.add(tr.source);
+
+                if (tr.targetLangs) tr.targetLangs.forEach(l => targets.add(l));
+                else if (tr.target) targets.add(tr.target);
+
+                if (tr.taskTypes) tr.taskTypes.forEach(t => taskTypes.add(t));
+            });
+
+            const sortedSources = Array.from(sources).sort();
+            const sortedTargets = Array.from(targets).sort();
+            const sortedTaskTypes = Array.from(taskTypes).sort();
+
+            const srcSel = document.getElementById('tr-f-source');
+            const tgtSel = document.getElementById('tr-f-target');
+            const typeSel = document.getElementById('tr-f-tasktypes');
+
+            if (srcSel && srcSel.options.length === 0) {
+                sortedSources.forEach(l => srcSel.add(new Option(l, l)));
+            }
+            if (tgtSel && tgtSel.options.length === 0) {
+                sortedTargets.forEach(l => tgtSel.add(new Option(l, l)));
+            }
+            if (typeSel && typeSel.options.length === 0) {
+                sortedTaskTypes.forEach(t => typeSel.add(new Option(t, t)));
+            }
         }
 
         function renderTranslatorsList() {
             const lc = document.getElementById('translator-list'); lc.innerHTML = '';
             let f = AppState.translators;
-            if (_trSearchTerm) f = f.filter(tr => tr.name.toLowerCase().includes(_trSearchTerm) || tr.source.toLowerCase().includes(_trSearchTerm) || tr.target.toLowerCase().includes(_trSearchTerm) || (tr.taskTypes || []).join(',').toLowerCase().includes(_trSearchTerm));
-            lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 px-1 mb-1">${f.length} of ${AppState.translators.length} translators</div>`);
+
+            // 1. Tab filters
+            if (_trFilterMode === 'available') f = f.filter(tr => !tr.assigned);
+            else if (_trFilterMode === 'assigned') f = f.filter(tr => tr.assigned);
+
+            // 2. Search box term
+            if (_trSearchTerm) {
+                f = f.filter(tr => tr.name.toLowerCase().includes(_trSearchTerm) ||
+                    tr.source.toLowerCase().includes(_trSearchTerm) ||
+                    tr.target.toLowerCase().includes(_trSearchTerm) ||
+                    (tr.taskTypes || []).join(',').toLowerCase().includes(_trSearchTerm));
+            }
+
+            // 3. Advanced filters
+            const filterState = getAdvancedFilterState();
+            let filtersActive = false;
+
+            if (filterState) {
+                // Role checkboxes
+                const hasRoleFilter = filterState.internal || filterState.thirdparty || filterState.new || filterState.specialist;
+                if (hasRoleFilter) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        if (filterState.internal && tr.workerType === 'Internal') return true;
+                        if (filterState.thirdparty && tr.workerType !== 'Internal') return true;
+                        if (filterState.new && tr.isNewEmployee) return true;
+                        if (filterState.specialist && tr.isSpecialist) return true;
+                        return false;
+                    });
+                }
+
+                // Availability checkboxes
+                const hasAvailabilityFilter = filterState.available || filterState.assigned;
+                if (hasAvailabilityFilter) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        if (filterState.available && !tr.assigned) return true;
+                        if (filterState.assigned && tr.assigned) return true;
+                        return false;
+                    });
+                }
+
+                // Quality slider minimum
+                if (filterState.minQuality > 1.0) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        const q = tr.rollingQualityEma || tr.quality || 0;
+                        return q >= filterState.minQuality;
+                    });
+                }
+
+                // Source Languages
+                if (filterState.sourceLangs.length > 0) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        const srcs = (tr.sourceLangs || [tr.source || '']).map(l => l.toLowerCase());
+                        return filterState.sourceLangs.some(l => srcs.includes(l.toLowerCase()));
+                    });
+                }
+
+                // Target Languages
+                if (filterState.targetLangs.length > 0) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        const tgts = (tr.targetLangs || [tr.target || '']).map(l => l.toLowerCase());
+                        return filterState.targetLangs.some(l => tgts.includes(l.toLowerCase()));
+                    });
+                }
+
+                // Task Types
+                if (filterState.taskTypes.length > 0) {
+                    filtersActive = true;
+                    f = f.filter(tr => {
+                        const types = (tr.taskTypes || []).map(t => t.toLowerCase());
+                        return filterState.taskTypes.some(t => types.includes(t.toLowerCase()));
+                    });
+                }
+            }
+
+            // Set active filters dot indicator
+            const ind = document.getElementById('tr-filter-indicator');
+            if (ind) {
+                if (filtersActive) ind.classList.remove('hidden');
+                else ind.classList.add('hidden');
+            }
+
+            const totalAvail = AppState.translators.filter(t => !t.assigned).length;
+            const totalAssign = AppState.translators.filter(t => tr => tr.assigned).length; // wait, let's make sure it's tr => tr.assigned, not t => tr => tr.assigned! Wait, the original code had: t => t.assigned
+            // Let's keep t => t.assigned as original:
+            const totalAssignReal = AppState.translators.filter(t => t.assigned).length;
+
+            lc.insertAdjacentHTML('beforeend', `<div class="flex gap-2 mb-2 px-1">
+                <span onclick="_trFilterMode='all';renderTranslatorsList()" class="px-2 py-1 ${_trFilterMode === 'all' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'} text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100">All (${AppState.translators.length})</span>
+                <span onclick="_trFilterMode='available';renderTranslatorsList()" class="px-2 py-1 ${_trFilterMode === 'available' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'} text-xs font-medium rounded-md cursor-pointer hover:bg-emerald-100">Available (${totalAvail})</span>
+                <span onclick="_trFilterMode='assigned';renderTranslatorsList()" class="px-2 py-1 ${_trFilterMode === 'assigned' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'} text-xs font-medium rounded-md cursor-pointer hover:bg-rose-100">Assigned (${totalAssignReal})</span>
+            </div>`);
+            lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 px-1 mb-1">${f.length} translators</div>`);
             f.slice(0, 100).forEach(tr => {
                 const isA = AppState.activeTranslatorId === tr.id;
                 const bc = isA ? 'border-indigo-500 bg-indigo-50/30 shadow-sm ring-1 ring-indigo-500' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm';
                 const wi = tr.workerType === 'Internal' ? `<i data-lucide="building" class="w-3 h-3 text-slate-400 inline"></i>` : `<i data-lucide="globe" class="w-3 h-3 text-fuchsia-500 inline"></i>`;
+                const assignBadge = tr.assigned ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-600 ml-1">ASSIGNED</span>` : '';
+                const specialBadge = tr.isSpecialist ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 ml-1">SPECIALIST</span>` : '';
+                const newBadge = tr.isNewEmployee ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 ml-1">NEW</span>` : '';
                 lc.insertAdjacentHTML('beforeend', `<div onclick="selectTranslator('${tr.id}')" class="p-3 border rounded-xl cursor-pointer transition-all ${bc}">
-                    <div class="flex justify-between items-start mb-1"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">${tr.name} ${wi}</h3><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${tr.taskCount} tasks</span></div>
-                    <div class="text-xs text-slate-500 mb-1">${tr.source} &rarr; ${tr.target} | ${(tr.taskTypes || []).join(', ')}</div>
-                    <div class="flex justify-between items-center text-xs font-medium text-slate-600 mt-2"><span>€${tr.rate}/hr</span><span class="flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i> ${tr.quality}</span></div>
+                    <div class="flex justify-between items-start mb-1"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-1">${tr.name} ${wi}${assignBadge}${specialBadge}${newBadge}</h3><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${tr.taskCount} tasks</span></div>
+                    <div class="text-xs text-slate-500 mb-1">${tr.source} &rarr; ${tr.target} | ${(tr.taskTypes || []).slice(0, 3).join(', ')}</div>
+                    <div class="flex justify-between items-center text-xs font-medium text-slate-600 mt-2"><span>&euro;${tr.rate}/hr</span><span class="flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i> ${tr.rollingQualityEma || tr.quality}</span></div>
                 </div>`);
             });
             if (f.length > 100) lc.insertAdjacentHTML('beforeend', `<div class="text-xs text-slate-400 text-center py-3">Showing first 100 — use search to narrow</div>`);
@@ -567,26 +1103,45 @@
             const tr = AppState.translators.find(t => t.id === id);
             const wb = tr.workerType === 'Internal' ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="building" class="w-3 h-3"></i> Internal</span>` : `<span class="bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-2 py-0.5 rounded text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="globe" class="w-3 h-3"></i> Third-Party</span>`;
             const types = (tr.taskTypes || []).map(t => `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">${t}</span>`).join(' ');
+            const assignBtnHtml = tr.assigned
+                ? `<button onclick="unassignTranslator('${tr.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"><i data-lucide="check-square" class="w-4 h-4"></i> Task Completed</button>`
+                : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="circle-check" class="w-3.5 h-3.5"></i> Available</span>`;
+            const schedHtml = tr.schedule ? `<div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Schedule</span><span class="font-bold text-slate-800 text-sm">${tr.schedule.start} - ${tr.schedule.end}</span></div>
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Work Days</span><span class="font-bold text-slate-800 text-sm">${tr.schedule.days.join(', ')}</span></div>` : '';
             document.getElementById('translator-content').innerHTML = `
                 <div class="max-w-3xl mx-auto mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                     <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-                        <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-bold">${tr.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
-                        <div class="flex flex-col gap-1.5"><h2 class="text-2xl font-bold text-slate-800 leading-none">${tr.name}</h2><p class="text-slate-500">${(tr.taskTypes || []).join(' / ')} Specialist</p>${wb}</div>
+                        <div class="w-16 h-16 rounded-full ${tr.assigned ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'} flex items-center justify-center text-2xl font-bold">${tr.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
+                        <div class="flex flex-col gap-1.5 flex-1">
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-2xl font-bold text-slate-800 leading-none">${tr.name}</h2>
+                                ${tr.assigned ? '<span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded text-xs font-bold uppercase">ASSIGNED</span>' : ''}
+                                ${tr.isSpecialist ? '<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold uppercase">SPECIALIST</span>' : ''}
+                                ${tr.isNewEmployee ? '<span class="bg-sky-100 text-sky-700 px-2 py-0.5 rounded text-xs font-bold uppercase">NEW</span>' : ''}
+                            </div>
+                            <p class="text-slate-500">${(tr.taskTypes || []).join(' / ')} Specialist</p>
+                            <div class="flex items-center gap-2">${wb}${assignBtnHtml}</div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-6 mb-6">
                         <div><h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Performance</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Avg. Rate</span><span class="font-bold text-slate-800">€${tr.rate}/hr</span></div>
-                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Avg. Quality</span><span class="font-bold text-emerald-600">${tr.quality} / 10</span></div>
+                             <div class="space-y-3">
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Avg. Rate</span><span class="font-bold text-slate-800">&euro;${tr.rate}/hr</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Quality (EMA)</span><span class="font-bold text-emerald-600">${tr.rollingQualityEma || tr.quality} / 10</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Punctuality Score</span><span class="font-bold ${(tr.rollingPunctuality || 0) >= 0.7 ? 'text-emerald-600' : 'text-amber-600'}">${((tr.rollingPunctuality || 0) * 100).toFixed(1)}%</span></div>
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Efficiency Ratio</span><span class="font-bold text-slate-800">${(tr.rollingEfficiency || 1).toFixed(2)}x</span></div>
                                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Total Tasks</span><span class="font-bold text-slate-800">${tr.taskCount}</span></div>
                                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Total Hours</span><span class="font-bold text-slate-800">${tr.totalHours}h</span></div>
                                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100"><span class="text-slate-600 text-sm">Clients Worked</span><span class="font-bold text-slate-800">${tr.clientsWorked}</span></div>
+                                ${schedHtml}
                             </div>
                         </div>
                         <div><h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Capabilities</h3>
-                            <div class="space-y-3">
+                             <div class="space-y-3">
                                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Task Types</div><div class="flex flex-wrap gap-1">${types}</div></div>
-                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Primary Pair</div><div class="font-medium text-slate-800 text-sm">${tr.source} → ${tr.target}</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Primary Pair</div><div class="font-medium text-slate-800 text-sm">${tr.source} &rarr; ${tr.target}</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Domain Experience</div><div class="font-medium text-slate-800 text-sm">${tr.domainExperience || 0} domains</div></div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">Task Type Experience</div><div class="font-medium text-slate-800 text-sm">${tr.taskTypeExperience || 0} types</div></div>
                                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">All Source Languages</div><div class="text-xs text-slate-600">${(tr.sourceLangs || []).join(', ')}</div></div>
                                 <div class="bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-xs text-slate-500 mb-2">All Target Languages</div><div class="text-xs text-slate-600">${(tr.targetLangs || []).join(', ')}</div></div>
                             </div>
@@ -594,6 +1149,22 @@
                     </div>
                 </div>`;
             lucide.createIcons();
+        }
+
+        function unassignTranslator(id) {
+            const tr = AppState.translators.find(t => t.id === id);
+            if (!tr) return;
+            tr.assigned = 0;
+            if (AppState.assignedTasks) {
+                const idx = AppState.assignedTasks.findIndex(t => t.translator.toLowerCase().trim() === tr.name.toLowerCase().trim());
+                if (idx > -1) AppState.assignedTasks.splice(idx, 1);
+            }
+            saveAssignments();
+            selectTranslator(id);
+            if (AppState.activeTaskId) {
+                renderMainContent(AppState.activeTaskId);
+            }
+            showToast(`${tr.name} marked as task completed and is now available.`, 'success');
         }
 
         /* =====================================================================
@@ -627,13 +1198,24 @@
             AppState.activeClientId = id; renderClientsList();
             const cl = AppState.clients.find(c => c.id === id);
             const types = (cl.taskTypes || []).map(t => `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">${t}</span>`).join(' ');
+            const wcColor = cl.wildcard === 'Quality' ? 'amber' : cl.wildcard === 'Price' ? 'blue' : cl.wildcard === 'Deadline' ? 'rose' : 'slate';
+            const wcBadge = cl.wildcard ? `<span class="bg-${wcColor}-100 text-${wcColor}-700 border border-${wcColor}-200 px-2.5 py-1 rounded-lg text-xs font-bold uppercase flex items-center gap-1 w-max"><i data-lucide="shield-alert" class="w-3 h-3"></i> Wildcard: ${cl.wildcard}</span>` : '<span class="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-xs font-bold">No Wildcard</span>';
             document.getElementById('client-content').innerHTML = `
                 <div class="max-w-3xl mx-auto mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-1">${cl.name}</h2>
-                    <p class="text-slate-500 mb-6 pb-6 border-b border-slate-100">${cl.sector || ''} · ${cl.industry || 'General'}</p>
+                    <div class="flex items-start justify-between mb-1">
+                        <h2 class="text-2xl font-bold text-slate-800">${cl.name}</h2>
+                        ${wcBadge}
+                    </div>
+                    <p class="text-slate-500 mb-6 pb-6 border-b border-slate-100">${cl.sector || ''} &middot; ${cl.industry || 'General'}</p>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Constraint Rules (SLA)</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100"><div class="text-xs text-blue-600 font-bold mb-1">Selling Price Ceiling</div><div class="text-xl font-bold text-slate-800">${cl.sellingHourlyPrice != null ? '&euro;' + cl.sellingHourlyPrice + '/hr' : 'N/A'}</div></div>
+                        <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100"><div class="text-xs text-emerald-600 font-bold mb-1">Min Quality Threshold</div><div class="text-xl font-bold text-slate-800">${cl.minQuality != null ? cl.minQuality + ' / 10' : 'N/A'}</div></div>
+                        <div class="bg-${wcColor}-50/50 p-4 rounded-xl border border-${wcColor}-100"><div class="text-xs text-${wcColor}-600 font-bold mb-1">Wildcard Relaxation</div><div class="text-xl font-bold text-slate-800">${cl.wildcard || 'None'}</div></div>
+                    </div>
                     <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Business Metrics</h3>
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100"><div class="text-xs text-indigo-600 font-bold mb-1">Avg. Rate</div><div class="text-xl font-bold text-slate-800">€${cl.avgRate}/hr</div></div>
+                        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100"><div class="text-xs text-indigo-600 font-bold mb-1">Avg. Rate</div><div class="text-xl font-bold text-slate-800">&euro;${cl.avgRate}/hr</div></div>
                         <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100"><div class="text-xs text-emerald-600 font-bold mb-1">Avg. Quality</div><div class="text-xl font-bold text-slate-800">${cl.avgQuality} / 10</div></div>
                         <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100"><div class="text-xs text-blue-600 font-bold mb-1">Total Tasks</div><div class="text-xl font-bold text-slate-800">${cl.taskCount}</div></div>
                         <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100"><div class="text-xs text-purple-600 font-bold mb-1">Translators Used</div><div class="text-xl font-bold text-slate-800">${cl.translatorsUsed}</div></div>
@@ -676,10 +1258,50 @@
             if (s >= 90) return 'bg-emerald-500'; if (s >= 80) return 'bg-indigo-500'; return 'bg-amber-500';
         }
 
+        let _taskSearchTerm = '';
+        let _taskFilterMode = 'all'; // 'all' | 'urgent'
         function renderTaskList() {
             const lc = document.getElementById('task-list');
             lc.innerHTML = '';
-            AppState.tasks.forEach(task => {
+
+            const allTasksCount = AppState.tasks.length;
+            const urgentTasksCount = AppState.tasks.filter(t => t.status === 'urgent').length;
+
+            // Update the tab buttons and counts dynamically
+            const allTab = document.getElementById('task-tab-all');
+            const urgentTab = document.getElementById('task-tab-urgent');
+
+            if (allTab) {
+                allTab.textContent = `All (${allTasksCount})`;
+                allTab.className = _taskFilterMode === 'all'
+                    ? "px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100"
+                    : "px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100";
+            }
+            if (urgentTab) {
+                urgentTab.textContent = `Urgent (${urgentTasksCount})`;
+                urgentTab.className = _taskFilterMode === 'urgent'
+                    ? "px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100"
+                    : "px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md cursor-pointer hover:bg-indigo-100";
+            }
+
+            let filteredTasks = AppState.tasks || [];
+            if (_taskFilterMode === 'urgent') {
+                filteredTasks = filteredTasks.filter(t => t.status === 'urgent');
+            }
+            if (_taskSearchTerm) {
+                filteredTasks = filteredTasks.filter(task => {
+                    const fullName = `${task.client} - ${task.type}`.toLowerCase();
+                    const id = (task.id || '').toLowerCase();
+                    const src = (task.source || '').toLowerCase();
+                    const tgt = (task.target || '').toLowerCase();
+                    return fullName.includes(_taskSearchTerm) ||
+                        id.includes(_taskSearchTerm) ||
+                        src.includes(_taskSearchTerm) ||
+                        tgt.includes(_taskSearchTerm);
+                });
+            }
+
+            filteredTasks.forEach(task => {
                 const isActive = AppState.activeTaskId === task.id;
                 const bc = isActive ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'border-slate-200 hover:border-indigo-300 hover:shadow-sm';
                 const bg = isActive ? 'bg-indigo-50/30' : 'bg-white';
@@ -718,6 +1340,15 @@
             const lift = data.businessLift;
             AppState.loading.recommendations = false;
 
+            // Enrich API recommendations with client-side constraintHtml
+            recs.forEach(rec => {
+                const tr = AppState.translators.find(t => t.name.toLowerCase().trim() === rec.name.toLowerCase().trim());
+                if (tr) {
+                    const { constraintHtml } = checkTranslatorConstraints(task, tr);
+                    rec.constraintHtml = constraintHtml;
+                }
+            });
+
             const typeColor = task.type === 'ProofReading' ? 'bg-purple-100 text-purple-700' : task.type === 'PostEditing' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700';
 
             // Build business lift header
@@ -732,30 +1363,34 @@
                     <span class="text-xs text-emerald-600 ml-auto">vs. ${lift.baselineTranslator}</span>
                 </div>`: '';
 
-            // Build constraint toggles
-            const togglesHtml = `
-                <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 fade-in-up" style="animation-delay:.1s">
-                    <div class="flex items-center gap-2 mb-3"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-500"></i><span class="text-sm font-bold text-slate-700">Hard Constraint Controls</span><span class="text-xs text-slate-400 ml-2">Toggle to re-run AI with relaxed filters</span></div>
-                    <div class="flex flex-wrap gap-6">
-                        ${buildToggle('strictSchedule', 'Strict Schedule Match', 'calendar-check')}
-                        ${buildToggle('strictIndustry', 'Strict Industry Match', 'factory')}
-                        ${buildToggle('enforceWildcards', 'Enforce Client Wildcards', 'shield-alert')}
-                    </div>
-                </div>`;
-
             // Build recommendation cards
             const recsHtml = recs.map((rec, i) => {
-                const isTop = i === 0;
-                const cardClass = isTop ? 'best-match-card' : 'bg-white border border-slate-200';
+                if (rec.isPlaceholder) {
+                    return `
+                    <div class="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-xl p-5 flex items-center gap-4 text-slate-400 fade-in-up" style="animation-delay:${i * 0.1}s">
+                        <div class="p-3 bg-slate-100 rounded-full text-slate-400 flex-shrink-0">
+                            <i data-lucide="info" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm">${rec.name}</h3>
+                            <p class="text-xs text-slate-500 mt-1">${rec.reason}</p>
+                        </div>
+                    </div>`;
+                }
+
+                const isTop = i === 0 && !rec.isBackupMatch;
+                const cardClass = isTop ? 'best-match-card' : rec.isBackupMatch ? 'bg-white border border-fuchsia-200 shadow-sm' : 'bg-white border border-slate-200';
                 const ribbonHtml = isTop ? `<div class="gold-ribbon"><i data-lucide="trophy" class="w-3 h-3 inline -mt-0.5"></i> Best Match</div>` : '';
-                const deltaHtml = isTop && rec.deltaAdvantage ? `<div class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-lg text-xs font-bold mt-1"><i data-lucide="zap" class="w-3 h-3"></i>${rec.deltaAdvantage}</div>` : '';
                 const rankBg = isTop ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400';
+                const rankText = rec.isBackupMatch ? 'Third-Party Backup' : `#${i + 1}`;
+                const rankClass = rec.isBackupMatch ? 'bg-fuchsia-100 text-fuchsia-700' : rankBg;
+
                 const workerBadgeClass = rec.workerType === 'Internal' ? 'bg-slate-100 text-slate-600' : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200';
                 const workerIcon = rec.workerType === 'Internal' ? 'building' : 'globe';
                 return `
                 <div class="${cardClass} rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group fade-in-up" style="animation-delay:${i * 0.1}s">
                     ${ribbonHtml}
-                    <div class="absolute top-0 ${isTop ? 'left-0 rounded-br-lg' : 'right-0 rounded-bl-lg'} ${rankBg} font-bold text-xs px-2 py-1">#${i + 1}</div>
+                    <div class="absolute top-0 ${isTop ? 'left-0 rounded-br-lg' : 'right-0 rounded-bl-lg'} ${rankClass} font-bold text-[10px] uppercase tracking-wider px-2 py-1">${rankText}</div>
                     <div class="flex items-start gap-4 mt-1">
                         <div class="relative flex items-center justify-center w-14 h-14 rounded-full ${getScoreColor(rec.matchScore)} flex-shrink-0">
                             <svg class="w-full h-full transform -rotate-90 absolute" viewBox="0 0 36 36">
@@ -772,14 +1407,14 @@
                                         <span class="px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${workerBadgeClass}"><i data-lucide="${workerIcon}" class="w-3 h-3"></i> ${rec.workerType}</span>
                                     </div>
                                     <div class="flex flex-wrap gap-2 mt-1 mb-1">${rec.tags.map(t => `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-${t.color}-100 text-${t.color}-700">${t.text}</span>`).join('')}</div>
-                                    ${deltaHtml}
                                 </div>
                                 <div class="text-right">
                                     <div class="text-sm font-semibold text-slate-700">€${rec.cost}<span class="text-slate-400 text-xs font-normal">/hr</span></div>
                                     <div class="text-xs text-slate-500 flex items-center justify-end gap-1 mt-0.5"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i> ${rec.quality} Q-Score</div>
                                 </div>
                             </div>
-                            <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm text-slate-600 mb-4 flex gap-3"><i data-lucide="sparkles" class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5"></i><p>${rec.reason}</p></div>
+                            <div class="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm text-slate-600 mb-3 flex gap-3"><i data-lucide="sparkles" class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5"></i><p>${rec.reason}</p></div>
+                            ${rec.constraintHtml ? `<details class="mb-3 group"><summary class="text-xs font-bold text-indigo-600 cursor-pointer flex items-center gap-1 select-none"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Constraint Check <span class="text-slate-400 font-normal ml-1">click to expand</span></summary><div class="mt-2 bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-1.5">${rec.constraintHtml}</div></details>` : ''}
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Available Schedule</div>
                                 <button onclick="assignTask('${task.id}','${rec.name}')" class="${isTop ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i> Assign Task</button>
@@ -809,33 +1444,112 @@
                         <p class="text-slate-600 text-sm border-t border-slate-100 pt-4 mt-2"><strong>PM Notes:</strong> ${task.description} <br><strong>Forecast:</strong> ${task.forecast} estimated completion time.</p>
                     </div>
                     ${liftHtml}
-                    ${togglesHtml}
                     <div class="mb-4 flex items-center gap-2">
                         <div class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="cpu" class="w-5 h-5"></i></div>
                         <h2 class="text-lg font-bold text-slate-800">AI Top Matches</h2>
                         <span class="text-sm text-slate-400 ml-2">Dual-Tower Recommender — Cost, Quality, and Schedule scoring.</span>
                     </div>
-                    <div class="space-y-4">${recsHtml}</div>
+                    <div class="space-y-4 mb-8">${recsHtml}</div>
+
+                    <!-- Manual Assignment Section -->
+                    <div class="border-t border-slate-200 pt-6 mt-8">
+                        <div class="mb-4 flex items-center gap-2">
+                            <div class="p-1.5 bg-slate-100 rounded-lg text-slate-600"><i data-lucide="user-cog" class="w-5 h-5"></i></div>
+                            <h2 class="text-lg font-bold text-slate-800">Manual Assignment</h2>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                            <p class="text-slate-500 text-xs mb-3">Optionally select any translator from the roster who meets all current client constraints and SLA guidelines.</p>
+                            <div class="relative mb-3">
+                                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                                <input type="text" id="manual-tr-search" oninput="filterManualTranslators('${task.id}')" placeholder="Search qualified translators by name..."
+                                    class="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                            </div>
+                            <div id="manual-tr-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                <!-- Injected by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>`;
+            renderManualTranslators(task.id, '');
             lucide.createIcons();
         }
 
-        function buildToggle(key, label, icon) {
-            const checked = AppState.constraints[key] ? 'checked' : '';
-            return `<label class="flex items-center gap-2 cursor-pointer select-none">
-                <i data-lucide="${icon}" class="w-4 h-4 text-slate-400"></i>
-                <span class="text-xs font-medium text-slate-600">${label}</span>
-                <label class="toggle-switch"><input type="checkbox" ${checked} onchange="toggleConstraint('${key}',this.checked)"><span class="toggle-slider"></span></label>
-            </label>`;
+        function filterManualTranslators(taskId) {
+            const val = document.getElementById('manual-tr-search').value.toLowerCase().trim();
+            renderManualTranslators(taskId, val);
         }
 
-        async function toggleConstraint(key, val) {
-            AppState.constraints[key] = val;
-            if (AppState.activeTaskId) {
-                showToast(`Constraint updated — re-running AI...`, 'success');
-                await renderMainContent(AppState.activeTaskId);
+        function renderManualTranslators(taskId, searchTerm = '') {
+            const listEl = document.getElementById('manual-tr-list');
+            if (!listEl) return;
+
+            const task = AppState.tasks.find(t => t.id === taskId);
+            if (!task) {
+                listEl.innerHTML = '<div class="text-xs text-slate-400 py-4 text-center">Task not found.</div>';
+                return;
             }
+
+            // Filter translators passing constraints
+            let qualified = (AppState.translators || []).filter(tr => {
+                const { checks } = checkTranslatorConstraints(task, tr);
+                return checks.langPair &&
+                    checks.taskType &&
+                    checks.notAssigned &&
+                    checks.schedule &&
+                    checks.quality &&
+                    checks.price;
+            });
+
+            if (searchTerm) {
+                qualified = qualified.filter(tr => tr.name.toLowerCase().includes(searchTerm));
+            }
+
+            if (qualified.length === 0) {
+                listEl.innerHTML = `<div class="text-xs text-slate-400 py-6 text-center flex flex-col items-center justify-center gap-1">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-slate-300"></i>
+                    <span>No translators meet all SLA and availability constraints for this task.</span>
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            listEl.innerHTML = qualified.map(tr => {
+                const isInternal = tr.workerType === 'Internal';
+                const workerBadge = isInternal
+                    ? `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="building" class="w-3 h-3"></i> Internal</span>`
+                    : `<span class="bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> Third-Party</span>`;
+
+                const qScore = parseFloat(tr.rollingQualityEma || tr.quality || 0).toFixed(1);
+
+                return `
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:border-slate-200 hover:bg-slate-50/50 transition-colors">
+                        <div class="min-w-0 flex-1 pr-4">
+                            <div class="flex items-center gap-2 flex-wrap mb-1">
+                                <span class="font-bold text-slate-800 text-xs">${tr.name}</span>
+                                ${workerBadge}
+                                ${tr.isSpecialist ? '<span class="bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">Specialist</span>' : ''}
+                                ${tr.isNewEmployee ? '<span class="bg-sky-50 text-sky-700 border border-sky-100 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">New</span>' : ''}
+                            </div>
+                            <div class="text-[10px] text-slate-400 truncate">
+                                ${tr.source} &rarr; ${tr.target} | ${(tr.taskTypes || []).slice(0, 3).join(', ')}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 flex-shrink-0">
+                            <div class="text-right">
+                                <div class="text-xs font-semibold text-slate-700">&euro;${tr.rate}/hr</div>
+                                <div class="text-[10px] text-slate-400 flex items-center gap-0.5 justify-end">
+                                    <i data-lucide="star" class="w-2.5 h-2.5 text-amber-400 fill-amber-400"></i>
+                                    ${qScore} Q-Score
+                                </div>
+                            </div>
+                            <button onclick="assignTask('${task.id}', '${tr.name}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm">Assign</button>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            lucide.createIcons();
         }
+
 
         /* =====================================================================
          * §10 — RECOMMENDATION ENGINE
@@ -843,57 +1557,201 @@
          *   affinity = 0.40 × quality_score + 0.30 × experience_score + 0.30 × cost_efficiency
          * Filters translators by matching language pair, then task type.
          * ===================================================================*/
-        function computeRecommendations(task) {
-            const pool = AppState.translators || [];
-            if (pool.length === 0) return [];
+        function checkTranslatorConstraints(task, tr) {
             const srcLow = (task.source || '').toLowerCase().trim();
             const tgtLow = (task.target || '').toLowerCase().trim();
             const typeLow = (task.type || '').toLowerCase().trim();
+            const constr = AppState.constraints;
 
-            // Filter 1: language pair must match
-            let candidates = pool.filter(tr => {
-                const srcs = (tr.sourceLangs || [tr.source || '']).map(l => l.toLowerCase().trim());
-                const tgts = (tr.targetLangs || [tr.target || '']).map(l => l.toLowerCase().trim());
-                return srcs.some(l => l === srcLow) && tgts.some(l => l === tgtLow);
-            });
+            // Resolve client constraints
+            const client = (AppState.clients || []).find(c => c.name === task.client);
+            const clientMinQ = client?.minQuality ?? null;
+            const clientMaxPrice = client?.sellingHourlyPrice ?? null;
+            const clientWildcard = client?.wildcard ?? null;
 
-            // Filter 2: task type (relax if no candidates survive)
-            const byType = candidates.filter(tr =>
-                !typeLow || typeLow === 'auto' ||
-                (tr.taskTypes || []).some(t => t.toLowerCase().trim() === typeLow)
-            );
+            // Relaxation factors
+            const qualityRelaxFactor = 0.7;  // threshold *= 0.7
+            const priceRelaxFactor = 2.0;    // ceiling *= 2.0
+            const scheduleRelaxFactor = 1.5; // bias multiplier for deadline recovery
+
+            const checks = {};
+
+            // C1: Language-pair match
+            const srcs = (tr.sourceLangs || [tr.source || '']).map(l => l.toLowerCase().trim());
+            const tgts = (tr.targetLangs || [tr.target || '']).map(l => l.toLowerCase().trim());
+            checks.langPair = srcs.some(l => l === srcLow) && tgts.some(l => l === tgtLow);
+
+            // C2: Task-type match
+            checks.taskType = !typeLow || typeLow === 'auto' || (tr.taskTypes || []).some(t => t.toLowerCase().trim() === typeLow);
+
+            // C2.5: Assignment check
+            checks.notAssigned = !tr.assigned;
+
+            // C3: Schedule capacity
+            const taskHours = parseFloat(task.forecast) || 8;
+            if (constr.strictSchedule && tr.schedule) {
+                const s = tr.schedule;
+                const startH = parseFloat((s.start || '0').split(':')[0]) || 0;
+                const endH = parseFloat((s.end || '24').split(':')[0]) || 24;
+                const dailyHours = endH - startH;
+                const weeklyHours = dailyHours * (s.days || []).length;
+                checks.schedule = weeklyHours >= taskHours;
+                checks.scheduleDetail = `${weeklyHours}h avail / ${taskHours}h needed`;
+            } else {
+                checks.schedule = true;
+                checks.scheduleDetail = 'Not checked';
+            }
+
+            // Client quality filter
+            const q = tr.rollingQualityEma || tr.quality || 0;
+            if (clientMinQ != null) {
+                let threshold = clientMinQ;
+                if (constr.enforceWildcards && clientWildcard === 'Quality') threshold *= qualityRelaxFactor;
+                checks.quality = q >= threshold;
+                checks.qualityDetail = `${q} vs ${threshold.toFixed(1)} threshold`;
+            } else {
+                checks.quality = true;
+                checks.qualityDetail = 'No min set';
+            }
+
+            // Client price filter
+            const rate = tr.rate || 0;
+            if (clientMaxPrice != null) {
+                let ceiling = clientMaxPrice;
+                if (constr.enforceWildcards && clientWildcard === 'Price') ceiling *= priceRelaxFactor;
+                checks.price = rate <= ceiling;
+                checks.priceDetail = `EUR${rate} vs EUR${ceiling.toFixed(0)} ceiling`;
+            } else {
+                checks.price = true;
+                checks.priceDetail = 'No max set';
+            }
+
+            // Deadline recovery (wildcard = 'Deadline')
+            if (constr.enforceWildcards && clientWildcard === 'Deadline') {
+                if (!checks.schedule && tr.schedule) {
+                    const s = tr.schedule;
+                    const startH = parseFloat((s.start || '0').split(':')[0]) || 0;
+                    const endH = parseFloat((s.end || '24').split(':')[0]) || 24;
+                    const dailyHours = endH - startH;
+                    const weeklyHours = dailyHours * (s.days || []).length;
+                    const relaxedNeed = taskHours / scheduleRelaxFactor;
+                    if (weeklyHours >= relaxedNeed && (tr.rollingPunctuality || 0) >= 0.7) {
+                        checks.schedule = true;
+                        checks.scheduleDetail += ' (DEADLINE wildcard applied)';
+                        checks.wildcardApplied = 'Deadline';
+                    }
+                }
+            }
+
+            // Build constraint check summary html
+            const ck = (pass, label, detail) => `<div class="flex items-center gap-1.5 text-xs"><span class="${pass ? 'text-emerald-500' : 'text-rose-500'}">${pass ? '&#10003;' : '&#10007;'}</span><span class="text-slate-600">${label}</span><span class="text-slate-400 ml-auto">${detail || ''}</span></div>`;
+            const constraintHtml = [
+                ck(checks.langPair, 'Language Pair', `${task.source} &rarr; ${task.target}`),
+                ck(checks.taskType, 'Task Type', task.type),
+                ck(checks.notAssigned, 'Not Assigned', ''),
+                ck(checks.schedule, 'Schedule Capacity', checks.scheduleDetail || ''),
+                ck(checks.quality, 'Quality Threshold', checks.qualityDetail || ''),
+                ck(checks.price, 'Price Ceiling', checks.priceDetail || ''),
+            ].join('');
+
+            return { checks, constraintHtml };
+        }
+
+        function computeRecommendations(task) {
+            const pool = AppState.translators || [];
+            if (pool.length === 0) return [];
+
+            // First filter by language pair match (HARD)
+            let candidates = pool.map(tr => {
+                const { checks, constraintHtml } = checkTranslatorConstraints(task, tr);
+                return { tr, checks, constraintHtml };
+            }).filter(c => c.checks.langPair);
+
+            // Filter by task type (HARD, relaxes gracefully)
+            const byType = candidates.filter(c => c.checks.taskType);
             if (byType.length > 0) candidates = byType;
+
+            // Assignment check (skip assigned translators)
+            candidates = candidates.filter(c => c.checks.notAssigned);
             if (candidates.length === 0) return [];
 
-            // Score using affinity formula
-            const maxRate  = Math.max(...candidates.map(tr => tr.rate      || 0), 1);
-            const maxTasks = Math.max(...candidates.map(tr => tr.taskCount || 0), 1);
+            // Filter out those failing hard constraints
+            const passed = candidates.filter(c => c.checks.schedule && c.checks.quality && c.checks.price);
+            const finalPool = passed.length > 0 ? passed : candidates.slice(0, 5); // fallback
 
-            const scored = candidates.map(tr => {
-                const q = (tr.quality   || 0) / 10;                           // quality  [0,1]
-                const x = Math.min((tr.taskCount || 0) / Math.min(maxTasks, 300), 1); // experience [0,1]
-                const e = 1 - (tr.rate || 0) / maxRate;                      // cost eff [0,1]
-                return { tr, affinity: 0.40*q + 0.30*x + 0.30*e };
+            // Score using affinity formula
+            const maxRate = Math.max(...finalPool.map(c => c.tr.rate || 0), 1);
+            const maxTasks = Math.max(...finalPool.map(c => c.tr.taskCount || 0), 1);
+
+            const scored = finalPool.map(c => {
+                const tr = c.tr;
+                const q = (tr.rollingQualityEma || tr.quality || 0) / 10;
+                const x = Math.min((tr.taskCount || 0) / Math.min(maxTasks, 300), 1);
+                const e = 1 - (tr.rate || 0) / maxRate;
+                return { tr, checks: c.checks, constraintHtml: c.constraintHtml, affinity: 0.40 * q + 0.30 * x + 0.30 * e };
             });
             scored.sort((a, b) => b.affinity - a.affinity);
 
-            return scored.slice(0, 3).map(({ tr, affinity }, i) => {
-                const score = Math.round(affinity * 100);
+            // 1. Take the top 3 overall matches
+            const top3 = scored.slice(0, 3);
+
+            // 2. Count Third-Party translators in the top 3
+            const tp_in_top3 = top3.filter(c => c.tr.workerType !== 'Internal');
+
+            const extra_recs = [];
+            let needed_tp = 0;
+            if (tp_in_top3.length < 2) {
+                needed_tp = 2 - tp_in_top3.length;
+                const remaining = scored.slice(3);
+                const tp_remaining = remaining.filter(c => c.tr.workerType !== 'Internal');
+                extra_recs.push(...tp_remaining.slice(0, needed_tp));
+            }
+
+            // Combine lists
+            const final_scored = top3.map(c => ({ ...c, isBackupMatch: false }));
+            final_scored.push(...extra_recs.map(c => ({ ...c, isBackupMatch: true })));
+
+            // Add placeholders if needed
+            const placeholders_needed = needed_tp - extra_recs.length;
+            for (let p = 0; p < placeholders_needed; p++) {
+                final_scored.push({ isPlaceholder: true, isBackupMatch: true });
+            }
+
+            return final_scored.map((c, i) => {
+                if (c.isPlaceholder) {
+                    return {
+                        name: "No additional Third-Party match available",
+                        isPlaceholder: true,
+                        isBackupMatch: true,
+                        matchScore: 0,
+                        cost: 0,
+                        quality: 0,
+                        workerType: "Third-Party",
+                        tags: [{ text: "Unavailable", color: "rose" }],
+                        reason: `No other Third-Party translators match constraints for ${task.source} → ${task.target} | task type: ${task.type || 'any'}.`,
+                        available: false
+                    };
+                }
+                const tr = c.tr;
+                const score = Math.round(c.affinity * 100);
                 const tags = [];
-                if ((tr.quality || 0) >= 8) tags.push({ text: 'Top Quality', color: 'emerald' });
+                if ((tr.rollingQualityEma || tr.quality || 0) >= 8) tags.push({ text: 'Top Quality', color: 'emerald' });
                 if ((tr.taskCount || 0) >= 200) tags.push({ text: 'Experienced', color: 'indigo' });
+                if (tr.isSpecialist) tags.push({ text: 'Specialist', color: 'amber' });
                 if (tr.workerType === 'Internal') tags.push({ text: 'Internal', color: 'slate' });
                 else tags.push({ text: 'Third-Party', color: 'fuchsia' });
-                if (tags.length < 2) tags.push({ text: task.type + ' Specialist', color: 'blue' });
+                if (c.checks.wildcardApplied) tags.push({ text: c.checks.wildcardApplied + ' Wildcard', color: 'rose' });
+
                 return {
-                    name: tr.name, matchScore: score, cost: tr.rate, quality: tr.quality,
+                    name: tr.name, matchScore: score, cost: tr.rate, quality: tr.rollingQualityEma || tr.quality,
                     workerType: tr.workerType,
                     tags,
-                    reason: `Matched on ${task.source} → ${task.target} | ${tr.taskCount} completed tasks, ` +
-                            `avg quality ${tr.quality}/10, rate €${tr.rate}/hr. ` +
-                            `Affinity score: ${score}% (quality 40% + experience 30% + cost efficiency 30%).`,
-                    deltaAdvantage: i === 0 ? `${score}% affinity vs market avg` : null,
-                    available: true
+                    constraintHtml: c.constraintHtml,
+                    reason: `${tr.taskCount} tasks completed, quality EMA ${(tr.rollingQualityEma || tr.quality).toFixed(1)}/10, ` +
+                        `punctuality ${((tr.rollingPunctuality || 0) * 100).toFixed(0)}%, rate EUR${tr.rate}/hr. ` +
+                        `Affinity: ${score}% (quality 40% + experience 30% + cost efficiency 30%).`,
+                    available: true,
+                    isBackupMatch: c.isBackupMatch
                 };
             });
         }
@@ -942,22 +1800,22 @@
                 };
                 headers.forEach((header, idx) => {
                     const val = values[idx]; if (!val) return;
-                    if (header === 'task_id' || header === 'id')          newTask.id          = val;
-                    else if (header === 'task_type')                       newTask.type        = val;
-                    else if (header === 'source_lang')                     newTask.source      = val;
-                    else if (header === 'target_lang')                     newTask.target      = val;
-                    else if (header === 'manufacturer')                    newTask.client      = val;
-                    else if (header === 'manufacturer_industry')           newTask.industry    = val;
-                    else if (header === 'hours')                           newTask.forecast    = val + 'h';
-                    else if (header === 'end')                             newTask.deadline    = val;
-                    else if (header === 'status')                          newTask.status      = val.toLowerCase();
+                    if (header === 'task_id' || header === 'id') newTask.id = val;
+                    else if (header === 'task_type') newTask.type = val;
+                    else if (header === 'source_lang') newTask.source = val;
+                    else if (header === 'target_lang') newTask.target = val;
+                    else if (header === 'manufacturer') newTask.client = val;
+                    else if (header === 'manufacturer_industry') newTask.industry = val;
+                    else if (header === 'hours') newTask.forecast = val + 'h';
+                    else if (header === 'end') newTask.deadline = val;
+                    else if (header === 'status') newTask.status = val.toLowerCase();
                     else if (header === 'pm_notes' || header === 'description') newTask.description = val;
                     else if (header === 'start' && !newTask.description.includes('Start'))
                         newTask.description = 'Start: ' + val + ' | ' + newTask.description;
                 });
                 // Compute real recommendations from translator database
                 newTask.recommendations = computeRecommendations(newTask);
-                newTask.businessLift    = computeBusinessLift(newTask, newTask.recommendations);
+                newTask.businessLift = computeBusinessLift(newTask, newTask.recommendations);
                 AppState.tasks.unshift(newTask);
                 addedCount++;
             }
@@ -972,21 +1830,90 @@
         }
 
         async function assignTask(taskId, translatorName) {
-            await DataService.assignTask(taskId, translatorName);
-            const idx = AppState.tasks.findIndex(t => t.id === taskId);
-            if (idx > -1) AppState.tasks.splice(idx, 1);
-            AppState.activeTaskId = null;
-            renderTaskList();
-            document.getElementById('main-content').innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-slate-400">
-                    <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4">
-                        <i data-lucide="check" class="w-8 h-8"></i>
-                    </div>
-                    <p class="text-lg font-medium text-slate-600 mb-1">Task Successfully Assigned</p>
-                    <p class="text-sm text-slate-400">Select another task from the inbox.</p>
-                </div>`;
-            lucide.createIcons();
-            showToast(`Assigned ${taskId} to ${translatorName}`, 'success');
+            try {
+                await DataService.assignTask(taskId, translatorName);
+                // Mark translator as assigned in state
+                const tr = AppState.translators.find(t => t.name === translatorName);
+                if (tr) { tr.assigned = 1; }
+                const idx = AppState.tasks.findIndex(t => t.id === taskId);
+                let taskObj = null;
+                if (idx > -1) {
+                    taskObj = AppState.tasks[idx];
+                    AppState.tasks.splice(idx, 1);
+                }
+
+                // Add to assignedTasks list
+                if (taskObj) {
+                    if (!AppState.assignedTasks) AppState.assignedTasks = [];
+                    AppState.assignedTasks.push({
+                        id: taskObj.id,
+                        client: taskObj.client,
+                        type: taskObj.type,
+                        source: taskObj.source,
+                        target: taskObj.target,
+                        forecast: taskObj.forecast,
+                        translator: translatorName,
+                        assignedAt: Date.now(),
+                        progress: 0
+                    });
+                }
+                saveAssignments();
+                AppState.activeTaskId = null;
+                renderTaskList();
+                document.getElementById('main-content').innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-400">
+                        <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-4">
+                            <i data-lucide="check" class="w-8 h-8"></i>
+                        </div>
+                        <p class="text-lg font-medium text-slate-600 mb-1">Task Successfully Assigned</p>
+                        <p class="text-sm text-slate-400">Assigned to <strong>${translatorName}</strong>. Select another task from the inbox.</p>
+                    </div>`;
+                lucide.createIcons();
+                showToast(`Assigned ${taskId} to ${translatorName}`, 'success');
+            } catch (err) {
+                console.error("Task assignment failed:", err);
+                showToast(`Failed to assign task: ${err.message || err}`, 'error');
+            }
+        }
+
+        function completeTask(taskId) {
+            if (!AppState.assignedTasks) return;
+            const idx = AppState.assignedTasks.findIndex(t => t.id === taskId);
+            if (idx > -1) {
+                const task = AppState.assignedTasks[idx];
+                const tr = AppState.translators.find(t => t.name === task.translator);
+                if (tr) {
+                    tr.assigned = 0;
+                }
+                AppState.assignedTasks.splice(idx, 1);
+                saveAssignments();
+                renderDashboardOverview();
+                updateDashboardStats();
+                showToast(`Task ${taskId} completed!`, 'success');
+            }
+        }
+
+        // ── Assignment persistence via localStorage ──
+        // Persist local translator assignments so they reload correctly
+        function saveAssignments() {
+            const assignments = {};
+            (AppState.translators || []).forEach(tr => {
+                if (tr.assigned) assignments[tr.name] = 1;
+            });
+            try {
+                localStorage.setItem('idisc_assignments', JSON.stringify(assignments));
+                localStorage.setItem('idisc_assigned_tasks', JSON.stringify(AppState.assignedTasks || []));
+            } catch (e) { }
+        }
+
+        function restoreAssignments() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('idisc_assignments') || '{}');
+                (AppState.translators || []).forEach(tr => {
+                    tr.assigned = saved[tr.name] ? 1 : 0;
+                });
+                AppState.assignedTasks = JSON.parse(localStorage.getItem('idisc_assigned_tasks') || '[]');
+            } catch (e) { }
         }
         /* =====================================================================
          * §11 — TOAST NOTIFICATIONS (preserved from original)
@@ -1030,7 +1957,7 @@
                 const isActive = m.id === activeId;
                 const lc = lossColor[m.loss_criterion] || 'slate';
                 return `
-                <div class="bg-white rounded-2xl p-6 shadow-sm border-2 transition-all cursor-pointer hover:shadow-md
+                <div class="bg-white rounded-2xl p-6 shadow-sm border-2 transition-all cursor-pointer hover:shadow-md w-80 flex-shrink-0
                     ${isActive ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-200'}"
                     onclick="activateModel('${m.id}')">
                     <div class="flex items-center justify-between mb-3">
@@ -1097,10 +2024,10 @@
                 const activeId = active?.id || models[0]?.id;
 
                 // Update header badge — green / connected
-                const dot   = document.getElementById('server-dot');
+                const dot = document.getElementById('server-dot');
                 const label = document.getElementById('server-label');
                 const badge = document.getElementById('server-badge');
-                dot.className   = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
                 label.textContent = `${activeId?.toUpperCase()} Active`;
                 badge.className = badge.className.replace('bg-slate-100 text-slate-500 border-slate-200',
                     'bg-emerald-50 text-emerald-700 border-emerald-200');
@@ -1120,9 +2047,45 @@
                 console.log('[iDISC] Inference server not detected. Using local JSON fallback.');
             }
 
-            // 2. Pre-load translators (for client-side fallback engine)
+            // 2. Pre-load translators and clients (for client-side constraint engine)
             AppState.translators = await DataService.fetchTranslators();
+            AppState.clients = await DataService.fetchClients();
+            restoreAssignments();
             AppState.tasks = await DataService.fetchPendingTasks();
+
+            // Wire up task search and All tab listeners
+            const taskSearch = document.getElementById('task-search');
+            if (taskSearch) {
+                taskSearch.oninput = e => {
+                    _taskSearchTerm = e.target.value.toLowerCase().trim();
+                    renderTaskList();
+                };
+            }
+            const taskTabAll = document.getElementById('task-tab-all');
+            if (taskTabAll) {
+                taskTabAll.onclick = () => {
+                    if (taskSearch) taskSearch.value = '';
+                    _taskSearchTerm = '';
+                    _taskFilterMode = 'all';
+                    renderTaskList();
+                };
+            }
+            const taskTabUrgent = document.getElementById('task-tab-urgent');
+            if (taskTabUrgent) {
+                taskTabUrgent.onclick = () => {
+                    _taskFilterMode = 'urgent';
+                    renderTaskList();
+                };
+            }
+
+            // Auto-refresh Dashboard progress bars
+            setInterval(() => {
+                const dashboardView = document.getElementById('view-dashboard');
+                if (dashboardView && !dashboardView.classList.contains('hidden')) {
+                    renderDashboardOverview();
+                }
+            }, 30000);
+
             renderTaskList();
             switchTab('tasks');
         })();

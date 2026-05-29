@@ -13,7 +13,7 @@ Endpoints:
     POST /api/v1/models/activate     → switch model {"model_id": "m2"}
     GET  /api/v1/translators         → full translators list (CORS-safe)
     GET  /api/v1/clients             → full clients list (CORS-safe)
-    POST /api/v1/tasks/{id}/recommend → top-3 ranked translators for a task
+    POST /api/v1/tasks/{id}/recommend → top-5 ranked translators for a task
 """
 
 from __future__ import annotations
@@ -175,8 +175,7 @@ app = FastAPI(title="IDISCDualTower Inference Server", version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080",
-                   "http://localhost:8081", "*"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -193,6 +192,10 @@ class RecommendRequest(BaseModel):
     client: Optional[str] = ""
     industry: Optional[str] = ""
     description: Optional[str] = ""
+    assigned_translators: Optional[list[str]] = None
+
+class AssignRequest(BaseModel):
+    translator: str
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @app.get("/api/v1/models")
@@ -241,6 +244,11 @@ def recommend(task_id: str, req: RecommendRequest):
         and (tgt in [l.lower() for l in (tr.get("targetLangs") or [tr.get("target","")])])
     ]
 
+    # Filter out already assigned translators
+    if req.assigned_translators:
+        assigned_set = {name.lower().strip() for name in req.assigned_translators}
+        candidates = [tr for tr in candidates if tr.get("name", "").lower().strip() not in assigned_set]
+
     # Step 2: further filter by task type (relax if empty)
     if typ:
         typed = [tr for tr in candidates
@@ -266,7 +274,30 @@ def recommend(task_id: str, req: RecommendRequest):
 
     # Sort descending by affinity score
     scored.sort(key=lambda x: x[0], reverse=True)
+    
+    # 1. Take the top 3 overall best matches
     top3 = scored[:3]
+    
+    # 2. Count Third-Party translators in the top 3
+    tp_in_top3 = [x for x in top3 if x[1].get("workerType") != "Internal"]
+    
+    extra_recs_pool = []
+    needed_tp = 0
+    if len(tp_in_top3) < 2:
+        needed_tp = 2 - len(tp_in_top3)
+        # Find next up to `needed_tp` Third-Party matches from the remaining pool
+        remaining = scored[3:]
+        tp_remaining = [x for x in remaining if x[1].get("workerType") != "Internal"]
+        extra_recs_pool = tp_remaining[:needed_tp]
+        
+    # Combine lists
+    final_scored = [(score, tr, False) for (score, tr) in top3] # (score, tr, is_backup)
+    final_scored.extend([(score, tr, True) for (score, tr) in extra_recs_pool])
+    
+    # If there are not enough third-party candidates, we add placeholder indicators (as None)
+    placeholders_needed = needed_tp - len(extra_recs_pool)
+    for _ in range(placeholders_needed):
+        final_scored.append((0, None, True))
 
     # Step 4: build response
     all_rates = [t.get("rate", 0) for t in _translators if t.get("rate", 0) > 0]
@@ -279,7 +310,27 @@ def recommend(task_id: str, req: RecommendRequest):
         hours = 8.0
 
     recs = []
-    for i, (score, tr) in enumerate(top3):
+    for i, (score, tr, is_backup) in enumerate(final_scored):
+        if tr is None:
+            # Render a placeholder entry
+            recs.append({
+                "name": "No additional Third-Party match available",
+                "isPlaceholder": True,
+                "isBackupMatch": True,
+                "matchScore": 0,
+                "cost": 0,
+                "quality": 0,
+                "workerType": "Third-Party",
+                "tags": [{"text": "Unavailable", "color": "rose"}],
+                "reason": (
+                    f"No other Third-Party translators match constraints for "
+                    f"{req.source} → {req.target} | task type: {req.type or 'any'}."
+                ),
+                "deltaAdvantage": None,
+                "available": False,
+            })
+            continue
+
         pct = int(round(score * 100))
         tags = []
         if (tr.get("quality") or 0) >= 8:
@@ -306,8 +357,9 @@ def recommend(task_id: str, req: RecommendRequest):
                 f"{tr.get('taskCount',0)} historical tasks, "
                 f"avg quality {tr.get('quality',0)}/10, rate €{tr.get('rate',0)}/hr."
             ),
-            "deltaAdvantage": f"{pct}% affinity ({_active_model_id})" if i == 0 else None,
+            "deltaAdvantage": f"{pct}% affinity ({_active_model_id})" if (i == 0 and not is_backup) else None,
             "available": True,
+            "isBackupMatch": is_backup,
         })
 
     # Business lift
@@ -328,6 +380,11 @@ def recommend(task_id: str, req: RecommendRequest):
         "businessLift": lift,
         "model": _active_model_id,
     }
+
+@app.post("/api/v1/tasks/{task_id}/assign")
+def assign_task(task_id: str, req: AssignRequest):
+    print(f"  [Server] Assigned task {task_id} to {req.translator}")
+    return {"ok": True}
 
 @app.get("/api/v1/tasks/pending")
 def get_pending_tasks():
