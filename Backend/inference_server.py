@@ -17,8 +17,9 @@ Endpoints:
 """
 
 from __future__ import annotations
-import json, pathlib, sys
+import json, pathlib, sys, pickle
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from fastapi import FastAPI, HTTPException
@@ -30,7 +31,21 @@ from typing import Optional
 ROOT        = pathlib.Path(__file__).resolve().parent.parent   # repo root
 ARCH_DIR    = ROOT / "Backend" / "algorithms" / "Dual-Tower MLP" / "Architecture"
 MODELS_DIR  = ROOT / "Backend" / "algorithms" / "Dual-Tower MLP" / "trained models"
+TENSORS_DIR = ROOT / "Backend" / "algorithms" / "Dual-Tower MLP" / "Data to Tensors" / "tensors"
 FRONTEND    = ROOT / "frontend" / "data"
+
+# ── Load Scalers ──────────────────────────────────────────────────────────────
+_scaler_a = None
+_scaler_b = None
+try:
+    with open(TENSORS_DIR / "scaler_a.pkl", "rb") as _f:
+        _scaler_a = pickle.load(_f)
+    with open(TENSORS_DIR / "scaler_b.pkl", "rb") as _f:
+        _scaler_b = pickle.load(_f)
+    print(f"  [Server] Loaded scaler_a.pkl and scaler_b.pkl successfully.")
+except Exception as _e:
+    print(f"  [Server] WARNING: Could not load scalers from {TENSORS_DIR}: {_e}")
+
 
 sys.path.insert(0, str(ARCH_DIR))
 from IDISC_DualTower import IDISCDualTower  # noqa
@@ -103,6 +118,7 @@ with open(FRONTEND / "clients.json", encoding="utf-8") as f:
 
 # Build quick look-ups
 _tr_by_name = {t["name"].lower().strip(): t for t in _translators}
+_cl_by_name = {c["name"].lower().strip(): c for c in _clients}
 
 # ── Feature engineering helpers ───────────────────────────────────────────────
 def _make_translator_vector(tr: dict, a_dim: int) -> np.ndarray:
@@ -121,8 +137,8 @@ def _make_translator_vector(tr: dict, a_dim: int) -> np.ndarray:
     vec[2]  = 40.0
     # [3] Works_Weekends — binary 0
     vec[3]  = 0.0
-    # [4] rolling_quality_ema — use avg quality
-    vec[4]  = float(tr.get("quality", 5.0)) / 10.0   # normalised
+    # [4] rolling_quality_ema — use avg quality (do not manually scale, StandardScaler handles it)
+    vec[4]  = float(tr.get("quality", 5.0))
     # [5] rolling_avg_task_time
     tc = max(int(tr.get("taskCount", 1)), 1)
     th = float(tr.get("totalHours", 0))
@@ -142,6 +158,13 @@ def _make_translator_vector(tr: dict, a_dim: int) -> np.ndarray:
     # Remaining dims (OHE language pairs): left as 0
     # The model was trained with specific OHE columns; without the exact
     # column ordering we fill them with 0 — the embedding layers handle this.
+
+    # Apply standard scaling to continuous feature values
+    if _scaler_a is not None:
+        cont_indices = [0, 1, 2, 4, 5, 6, 7, 8, 9]
+        cont_feats = pd.DataFrame(vec[cont_indices].reshape(1, -1), columns=_scaler_a.feature_names_in_)
+        vec[cont_indices] = _scaler_a.transform(cont_feats)[0]
+
     return vec
 
 
@@ -160,14 +183,29 @@ def _make_task_vector(task: dict, b_dim: int) -> np.ndarray:
     vec[1] = 0.0
     # [2] MANUFACTURER_INDUSTRY_enc — unknown → 0
     vec[2] = 0.0
-    # [3] MIN_QUALITY — default 0
-    vec[3] = 0.0
+
+    # Retrieve client if possible
+    client_name = task.get("client", "").lower().strip()
+    cl = _cl_by_name.get(client_name, {})
+
+    # [3] MIN_QUALITY
+    vec[3] = float(cl.get("minQuality", 0.0))
     # [4] WILDCARD_enc — 0
     vec[4] = 0.0
-    # [5] SELLING_HOURLY_PRICE — estimate from market avg
-    all_rates = [t.get("rate", 0) for t in _translators if t.get("rate", 0) > 0]
-    vec[5] = float(np.mean(all_rates)) if all_rates else 20.0
+    # [5] SELLING_HOURLY_PRICE — client specific or market average estimate
+    if "sellingHourlyPrice" in cl:
+        vec[5] = float(cl["sellingHourlyPrice"])
+    else:
+        all_rates = [t.get("rate", 0) for t in _translators if t.get("rate", 0) > 0]
+        vec[5] = float(np.mean(all_rates)) if all_rates else 20.0
     # Remaining OHE: left as 0
+
+    # Apply standard scaling to continuous feature values
+    if _scaler_b is not None:
+        cont_indices = [0, 3, 5]
+        cont_feats = pd.DataFrame(vec[cont_indices].reshape(1, -1), columns=_scaler_b.feature_names_in_)
+        vec[cont_indices] = _scaler_b.transform(cont_feats)[0]
+
     return vec
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
