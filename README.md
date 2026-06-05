@@ -8,18 +8,7 @@ Rather than operating as a "black box" that assigns tasks automatically, the **A
 
 ## ⚡ Quick Start
 
-### 1. Launch the Frontend
-The frontend dashboard works offline by default using pre-built JSON databases.
-```bash
-# 1. Navigate to the frontend folder
-cd frontend
-
-# 2. Start the local server
-python serve.py
-```
-This automatically opens your browser to **http://localhost:8080/idisc_hud.html**.
-
-### 2. Launch the FastAPI Inference Server (Optional)
+### 1. Launch the FastAPI Inference Server
 To run live machine learning recommendations using the PyTorch Dual-Tower models:
 ```bash
 # 1. Ensure you have the dependencies installed
@@ -31,6 +20,16 @@ python backend/inference_server.py
 The server runs on **http://localhost:8000**, and the frontend will automatically detect it and switch to **Online Mode**.
 
 ---
+### 2. Launch the Frontend
+The frontend dashboard works offline by default using pre-built JSON databases.
+```bash
+# 1. Navigate to the frontend folder
+cd frontend
+
+# 2. Start the local server
+python serve.py
+```
+This automatically opens your browser to **http://localhost:8080/idisc_hud.html**.
 
 ## 1. High-Level System Architecture & Component Mapping
 
