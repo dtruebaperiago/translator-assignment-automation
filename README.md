@@ -45,7 +45,7 @@ graph TD
         NB_01["01_EDA/<br>EDA_Translators_&_Sectors.ipynb"]
         NB_02["02_preprocessing/<br>Splitting_the_Data.ipynb"]
         NB_03["03_feature_engineering/<br>Data_trial.ipynb"]
-        NB_04["04_Dataset_Clarification_Questions/<br>README.md<br>Synthesis_Project_QA.pdf"]
+        NB_04["04_Dataset_Analysis/<br>README.md<br>"]
     end
 
     subgraph Backend_Folder [backend/]
@@ -94,10 +94,10 @@ graph TD
 The dataset pipeline takes raw translator/client data and prepares it for rule-based filters and machine learning training, ensuring no **data leakage** occurs.
 
 ### 2.1 Raw Data Extraction
-*   [create_csvs.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/DATA/Implementation/create_csvs.py): Extracts zipped Excel sheets into individual CSV tables under `DATA/Initial Dataset/CSV/`.
-*   [generate_translator_data.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/DATA/Implementation/generate_translator_data.py): Aggregates translator history to compute their latest state. Saves this as `DATA/Processed/Translators_Data.csv`, which acts as the current roster for rule-based checks.
+*   [create_csvs.py](DATA/Implementation/create_csvs.py): Extracts zipped Excel sheets into individual CSV tables under `DATA/Initial Dataset/CSV/`.
+*   [generate_translator_data.py](DATA/Implementation/generate_translator_data.py): Aggregates translator history to compute their latest state. Saves this as `DATA/Processed/Translators_Data.csv`, which acts as the current roster for rule-based checks.
 
-### 2.2 Time-Series Feature Engineering ([preprocessing_pipeline.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/DATA/Implementation/preprocessing_pipeline.py))
+### 2.2 Time-Series Feature Engineering ([preprocessing_pipeline.py](DATA/Implementation/preprocessing_pipeline.py))
 To prevent the model from "cheating" by seeing future performance, all engineered features are calculated as expanding rolling windows computed strictly prior to a task's start date:
 *   **Rolling Experience Counters**: Tracks overall task counts, sector experience (e.g. `domain_experience`), and task-type experience.
 *   **Rolling Performance Ratings**: exponential moving average (EMA) of quality evaluations (`rolling_quality_ema`), punctuality scores, and forecast-vs-actual efficiency ratios.
@@ -118,16 +118,16 @@ We split data chronologically: **70% Train** (`train_merged.csv`) for loss backp
 
 ## 3. Hard-Constraints Filtering Engine
 
-Implemented in [backend/constraints/](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/constraints/), these rules filter out infeasible candidates before applying the machine learning model.
+Implemented in [backend/constraints/](backend/constraints/), these rules filter out infeasible candidates before applying the machine learning model.
 
-### 3.1 Hard Filtering ([demand.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/constraints/demand.py))
+### 3.1 Hard Filtering ([demand.py](backend/constraints/demand.py))
 *   **C1 (Language Pair)**: Translator must support the exact source and target language pair.
 *   **C2 (Task Type)**: Translator must have previously performed this task type.
 *   **C2.5 (Availability)**: Translator must not be currently locked or assigned.
 *   **C3 (Capacity)**: Available shift overlap hours within the demand window must satisfy:
     $$\text{Available Hours} \ge \text{Forecasted Hours} \times 1.5\text{ (Buffer)}$$
 
-### 3.2 Client-Specific Wildcard Relaxation ([client.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/constraints/client.py))
+### 3.2 Client-Specific Wildcard Relaxation ([client.py](backend/constraints/client.py))
 Clients define a `WILDCARD` priority (`Quality`, `Price`, or `Deadline`), allowing constraints to relax when no perfect candidate is available:
 *   **Quality Wildcard**: Lowers the quality threshold by 30% ($\text{Client Min Quality} \times 0.7$).
 *   **Price Wildcard**: Raises the price ceiling by 100% ($\text{Client Price} \times 2.0$).
@@ -163,15 +163,15 @@ Candidates that pass the constraints are scored by a **Two-Tower Neural Network*
                 Affinity Score [0, 1]
 ```
 
-### 4.1 Architecture & Mechanics ([IDISC_DualTower.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/algorithms/Dual-Tower%20MLP/Architecture/IDISC_DualTower.py))
+### 4.1 Architecture & Mechanics ([IDISC_DualTower.py](backend/algorithms/Dual-Tower%20MLP/Architecture/IDISC_DualTower.py))
 *   **Heterogeneous Inputs**: Tower A encodes 132 translator features; Tower B encodes 140 task features.
 *   **ResNet Skip Connections**: Each tower uses a bottleneck block with shortcut additions (`x1 + x2`) to enable stable gradient backpropagation and prevent vanishing gradients.
 *   **Magnitude-Invariant Scoring**: Computes the cosine similarity between the projected 64-D embeddings.
 *   **Learnable Temperature ($\tau$)**: Kosine similarity is scaled by a parameter $\tau$ that is trained via backpropagation, automatically adjusting the decisiveness of the score distributions. The final score is bounded in $[0.0, 1.0]$ via a sigmoid.
 *   **Explainability Hook**: Exposes a `return_embeddings=True` parameter to fetch raw embeddings for UMAP visualizations or Captum feature attribution.
 
-### 4.2 Training Pipeline ([train_model.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/algorithms/Dual-Tower%20MLP/train_model.py))
-*   Normalizes continuous features using [data_to_tensors.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/algorithms/Dual-Tower%20MLP/Data%20to%20Tensors/data_to_tensors.py) (fitted strictly on train tensors).
+### 4.2 Training Pipeline ([train_model.py](backend/algorithms/Dual-Tower%20MLP/train_model.py))
+*   Normalizes continuous features using [data_to_tensors.py](backend/algorithms/Dual-Tower%20MLP/Data%20to%20Tensors/data_to_tensors.py) (fitted strictly on train tensors).
 *   Minimizes `BCELoss` using the `AdamW` optimizer and a `OneCycleLR` learning rate scheduler.
 *   Enforces early stopping (patience=7) and saves model checkpoints inside the `trained models/` directory.
 
@@ -179,14 +179,14 @@ Candidates that pass the constraints are scored by a **Two-Tower Neural Network*
 
 ## 5. Inference & Frontend Integration
 
-### 5.1 FastAPI Server ([inference_server.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/inference_server.py))
+### 5.1 FastAPI Server ([inference_server.py](backend/inference_server.py))
 The backend exposes a FastAPI REST service to serve recommendations:
 *   Preloads and manages multiple trained model folders (`m1`, `m2`, `m3`, `m4`).
-*   Runs rule-based filters from [demand.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/constraints/demand.py) and [client.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/backend/constraints/client.py).
+*   Runs rule-based filters from [demand.py](backend/constraints/demand.py) and [client.py](backend/constraints/client.py).
 *   Embeds the task/client requests, performs inference through PyTorch, and ranks candidates.
 *   Calculates **Business Lift** (projected margin increase and cost savings) vs. a baseline average translator.
 
-### 5.2 User Interface Dashboard ([idisc_hud.html](file:///c:/GitHub/tasks-assignment-in-translation-team-6/frontend/idisc_hud.html))
+### 5.2 User Interface Dashboard ([idisc_hud.html](frontend/idisc_hud.html))
 A TailwindCSS single-page web dashboard for Project Managers:
 *   **Interactive Dashboard Overview**: Added key business metrics, real-time forecast-based progress cards for active assignments (which resolve without manual timers), and a translator split donut chart showing workload distribution between Internal and Third-Party workers.
 *   **Tasks Inbox**: Allows PMs to upload a CSV of pending tasks and select them to see recommendations.
@@ -235,10 +235,10 @@ sequenceDiagram
 ## 7. Notebooks & Administrative Tools
 
 ### 7.1 Historical Notebooks (`notebooks/`)
-*   [01_EDA/EDA_Translators_&_Sectors.ipynb](file:///c:/GitHub/tasks-assignment-in-translation-team-6/notebooks/01_EDA/EDA_Translators_&_Sectors.ipynb): Initial statistics on roster volumes, languages, and pricing metrics.
-*   [02_preprocessing/Splitting_the_Data.ipynb](file:///c:/GitHub/tasks-assignment-in-translation-team-6/notebooks/02_preprocessing/Splitting_the_Data.ipynb): Prototypes the chronological time-series splitting.
-*   [03_feature_engineering/Data_trial.ipynb](file:///c:/GitHub/tasks-assignment-in-translation-team-6/notebooks/03_feature_engineering/Data_trial.ipynb): Sandbox testing for expanding rolling windows.
-*   [04_Dataset_Clarification_Questions/](file:///c:/GitHub/tasks-assignment-in-translation-team-6/notebooks/04_Dataset_Clarification_Questions/): PDF logs resolving dataset attributes with client.
+*   [01_EDA/EDA_Translators_&_Sectors.ipynb](notebooks/01_EDA/EDA_Translators_&_Sectors.ipynb): Initial statistics on roster volumes, languages, and pricing metrics.
+*   [02_preprocessing/Splitting_the_Data.ipynb](notebooks/02_preprocessing/Splitting_the_Data.ipynb): Prototypes the chronological time-series splitting.
+*   [03_feature_engineering/Data_trial.ipynb](notebooks/03_feature_engineering/Data_trial.ipynb): Sandbox testing for expanding rolling windows.
+*   [04_Dataset_Analysis/](notebooks/04_Dataset_Analysis/): Dataset analysis and key findings.
 
 ### 7.2 Offline Administrative Metrics
-*   [translator_metrics.py](file:///c:/GitHub/tasks-assignment-in-translation-team-6/Documentation/translator_metrics.py): A standalone tool that compiles overall quality ratings, quality by language pairs, and sector experience scores into a styled multi-sheet Excel spreadsheet.
+*   [translator_metrics.py](Documentation/translator_metrics.py): A standalone tool that compiles overall quality ratings, quality by language pairs, and sector experience scores into a styled multi-sheet Excel spreadsheet.
