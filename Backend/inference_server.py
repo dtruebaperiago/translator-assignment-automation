@@ -235,6 +235,14 @@ class RecommendRequest(BaseModel):
 class AssignRequest(BaseModel):
     translator: str
 
+class RegisterTranslatorRequest(BaseModel):
+    name: str
+    source: str
+    target: str
+    rate: float
+    quality: float
+    task_type: str
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @app.get("/api/v1/models")
 def list_models():
@@ -268,6 +276,78 @@ def get_translators():
 @app.get("/api/v1/clients")
 def get_clients():
     return _clients
+
+@app.post("/api/v1/translators")
+def register_translator(req: RegisterTranslatorRequest):
+    # Find the max TR ID to generate the next ID
+    max_id_num = 0
+    for t in _translators:
+        tid = t.get("id", "")
+        if tid.startswith("TR-"):
+            try:
+                num = int(tid[3:])
+                if num > max_id_num:
+                    max_id_num = num
+            except ValueError:
+                pass
+    next_id = f"TR-{max_id_num + 1:04d}"
+    
+    new_tr = {
+        "id": next_id,
+        "name": req.name,
+        "source": req.source,
+        "target": req.target,
+        "rate": req.rate,
+        "quality": req.quality,
+        "taskTypes": [req.task_type],
+        "taskCount": 0,
+        "totalHours": 0.0,
+        "sourceLangs": [req.source],
+        "targetLangs": [req.target],
+        "clientsWorked": 0,
+        "status": "Available",
+        "workerType": "Third-Party",
+        "rollingQualityEma": req.quality,
+        "rollingPunctuality": 0.5,
+        "rollingEfficiency": 1.0,
+        "rollingAvgTaskTime": 8.0,
+        "domainExperience": 0,
+        "taskTypeExperience": 0,
+        "isNewEmployee": 1,
+        "isSpecialist": 0,
+        "assigned": 0,
+        "rollingTaskCount": 0,
+        "schedule": {
+            "start": "9:00:00",
+            "end": "18:00:00",
+            "days": ["MON", "TUES", "WED", "THURS", "FRI"]
+        },
+        "hourlyRates": {
+            f"{req.source}->{req.target}": req.rate
+        }
+    }
+    
+    # Persist back to translators.json
+    translators_file = FRONTEND / "translators.json"
+    try:
+        with open(translators_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        data = []
+    
+    data.append(new_tr)
+    
+    try:
+        with open(translators_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        print(f"Error persisting new translator to file: {e}")
+        
+    # Update in-memory caches
+    _translators.append(new_tr)
+    _tr_by_name[req.name.lower().strip()] = new_tr
+    
+    return {"ok": True, "translator": new_tr}
 
 @app.post("/api/v1/tasks/{task_id}/recommend")
 def recommend(task_id: str, req: RecommendRequest):

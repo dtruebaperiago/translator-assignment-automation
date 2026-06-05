@@ -774,6 +774,81 @@
         </div>
     </div>
 
+    <!-- Register Third-Party Translator Modal -->
+    <div id="register-translator-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                <div class="flex items-center gap-2 text-indigo-700">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    <h3 class="font-bold text-slate-800 text-base">Register Third-Party Translator</h3>
+                </div>
+                <button onclick="closeRegisterTranslatorModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Form -->
+            <form onsubmit="submitRegisterTranslator(event)" class="p-6 space-y-4">
+                <input type="hidden" id="reg-task-id">
+                
+                <!-- Pre-filled locked task parameters -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Required Task Specifications</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Language Pair</label>
+                            <div class="text-xs font-bold text-slate-700" id="reg-lang-pair-lbl">Source → Target</div>
+                            <input type="hidden" id="reg-source">
+                            <input type="hidden" id="reg-target">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Task Type</label>
+                            <div class="text-xs font-bold text-slate-700" id="reg-task-type-lbl">Translation</div>
+                            <input type="hidden" id="reg-task-type">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input: Name -->
+                <div>
+                    <label for="reg-name" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Translator Name</label>
+                    <input type="text" id="reg-name" required placeholder="e.g. Acme Translation Services"
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                </div>
+
+                <!-- Input: Hourly Rate -->
+                <div>
+                    <label for="reg-rate" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hourly Rate (€/hr)</label>
+                    <input type="number" id="reg-rate" required min="1" step="0.5" placeholder="e.g. 25.00"
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                </div>
+
+                <!-- Input: Quality Target -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="reg-quality" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Quality Target (1-10)</label>
+                        <span id="reg-quality-lbl" class="font-bold text-indigo-600 text-sm">8.0</span>
+                    </div>
+                    <input type="range" id="reg-quality" min="1" max="10" step="0.1" value="8.0"
+                        oninput="document.getElementById('reg-quality-lbl').textContent = parseFloat(this.value).toFixed(1)"
+                        class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2">
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeRegisterTranslatorModal()"
+                        class="flex-1 py-2.5 border border-slate-200 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all">
+                        Register Translator
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Custom Toast Notification Container -->
     <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50"></div>
 
@@ -1032,6 +1107,57 @@
                     method: 'POST', body: JSON.stringify({ translator: translatorName })
                 });
                 return { ok: true };
+            },
+
+            async registerTranslator(name, source, target, rate, quality, taskType) {
+                if (API_BASE) {
+                    return this._fetch(`${API_BASE}/translators`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name,
+                            source,
+                            target,
+                            rate: parseFloat(rate),
+                            quality: parseFloat(quality),
+                            task_type: taskType
+                        })
+                    });
+                }
+                const nextId = `TR-${Math.floor(1000 + Math.random() * 9000)}`;
+                const newTr = {
+                    id: nextId,
+                    name,
+                    source,
+                    target,
+                    rate: parseFloat(rate),
+                    quality: parseFloat(quality),
+                    taskTypes: [taskType],
+                    taskCount: 0,
+                    totalHours: 0.0,
+                    sourceLangs: [source],
+                    targetLangs: [target],
+                    clientsWorked: 0,
+                    status: "Available",
+                    workerType: "Third-Party",
+                    rollingQualityEma: parseFloat(quality),
+                    rollingPunctuality: 0.5,
+                    rollingEfficiency: 1.0,
+                    rollingAvgTaskTime: 8.0,
+                    domainExperience: 0,
+                    taskTypeExperience: 0,
+                    isNewEmployee: 1,
+                    isSpecialist: 0,
+                    assigned: 0,
+                    rollingTaskCount: 0,
+                    schedule: {
+                        start: "9:00:00",
+                        end: "18:00:00",
+                        days: ["MON", "TUES", "WED", "THURS", "FRI"]
+                    },
+                    hourlyRates: {}
+                };
+                newTr.hourlyRates[`${source}->${target}`] = parseFloat(rate);
+                return { ok: true, translator: newTr };
             },
         };
 
@@ -2014,12 +2140,12 @@
          * §8 — TASK LIST RENDER
          * ===================================================================*/
         function getScoreColor(s) {
-            if (s >= 90) return 'text-emerald-500 stroke-emerald-500 bg-emerald-50';
-            if (s >= 80) return 'text-indigo-500 stroke-indigo-500 bg-indigo-50';
+            if (s >= 70) return 'text-emerald-500 stroke-emerald-500 bg-emerald-50';
+            if (s >= 65) return 'text-indigo-500 stroke-indigo-500 bg-indigo-50';
             return 'text-amber-500 stroke-amber-500 bg-amber-50';
         }
         function getProgressColor(s) {
-            if (s >= 90) return 'bg-emerald-500'; if (s >= 80) return 'bg-indigo-500'; return 'bg-amber-500';
+            if (s >= 70) return 'bg-emerald-500'; if (s >= 65) return 'bg-indigo-500'; return 'bg-amber-500';
         }
 
         let _taskSearchTerm = '';
@@ -2128,8 +2254,22 @@
                 </div>`: '';
 
             // Build recommendation cards
-            const recsHtml = recs.map((rec, i) => {
-                if (rec.isPlaceholder) {
+            let recsHtml = '';
+            if (recs.length === 0) {
+                recsHtml = `
+                    <div class="border-2 border-dashed border-rose-200 bg-rose-50/30 rounded-2xl p-8 text-center flex flex-col items-center justify-center max-w-xl mx-auto my-6 fade-in-up">
+                        <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mb-4">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mb-1">No Capable Translators Available</h3>
+                        <p class="text-sm text-slate-500 mb-6 max-w-md">No translators currently in our database support the language pair <strong>${task.source} &rarr; ${task.target}</strong>.</p>
+                        <button onclick="openRegisterTranslatorModal('${task.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-md flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Register New Third-Party Translator
+                        </button>
+                    </div>`;
+            } else {
+                recsHtml = recs.map((rec, i) => {
+                    if (rec.isPlaceholder) {
                     return `
                     <div class="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-xl p-5 flex items-center gap-4 text-slate-400 fade-in-up" style="animation-delay:${i * 0.1}s">
                         <div class="p-3 bg-slate-100 rounded-full text-slate-400 flex-shrink-0">
@@ -2187,6 +2327,7 @@
                     </div>
                 </div>`;
             }).join('');
+            }
 
             mc.innerHTML = `
                 <div class="max-w-4xl mx-auto w-full pb-10">
@@ -2680,6 +2821,86 @@
                 AppState.assignedTasks = JSON.parse(localStorage.getItem('idisc_assigned_tasks') || '[]');
             } catch (e) { }
         }
+
+        /* =====================================================================
+         * §11.5 — REGISTER TRANSLATOR MODAL & HANDLERS
+         * ===================================================================*/
+        function openRegisterTranslatorModal(taskId) {
+            SoundFX.playClick();
+            const task = AppState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('reg-task-id').value = taskId;
+            document.getElementById('reg-source').value = task.source;
+            document.getElementById('reg-target').value = task.target;
+            document.getElementById('reg-task-type').value = task.type;
+
+            document.getElementById('reg-lang-pair-lbl').textContent = `${task.source} → ${task.target}`;
+            document.getElementById('reg-task-type-lbl').textContent = task.type;
+
+            // Reset inputs
+            document.getElementById('reg-name').value = '';
+            document.getElementById('reg-rate').value = '';
+            document.getElementById('reg-quality').value = 8.0;
+            document.getElementById('reg-quality-lbl').textContent = '8.0';
+
+            const modal = document.getElementById('register-translator-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function closeRegisterTranslatorModal() {
+            SoundFX.playClick();
+            const modal = document.getElementById('register-translator-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function submitRegisterTranslator(event) {
+            event.preventDefault();
+            const taskId = document.getElementById('reg-task-id').value;
+            const name = document.getElementById('reg-name').value.trim();
+            const source = document.getElementById('reg-source').value;
+            const target = document.getElementById('reg-target').value;
+            const rate = parseFloat(document.getElementById('reg-rate').value);
+            const quality = parseFloat(document.getElementById('reg-quality').value);
+            const taskType = document.getElementById('reg-task-type').value;
+
+            if (!name || isNaN(rate) || isNaN(quality)) {
+                showToast("Please fill all fields.", "error");
+                return;
+            }
+
+            try {
+                const res = await DataService.registerTranslator(name, source, target, rate, quality, taskType);
+                if (res && (res.ok || res.id)) {
+                    const newTr = res.translator;
+                    // Check if it's already in our local AppState.translators
+                    if (!AppState.translators.some(t => t.id === newTr.id)) {
+                        AppState.translators.push(newTr);
+                    }
+                    closeRegisterTranslatorModal();
+                    showToast(`Successfully registered ${newTr.name} (${newTr.id})`, 'success');
+                    
+                    // Clear recommendations for this task in AppState so it re-computes
+                    const task = AppState.tasks.find(t => t.id === taskId);
+                    if (task) {
+                        task.recommendations = [];
+                        task.businessLift = null;
+                    }
+                    
+                    // Re-render
+                    await renderMainContent(taskId);
+                } else {
+                    showToast("Failed to register translator.", "error");
+                }
+            } catch (err) {
+                console.error("Error registering translator:", err);
+                showToast(`Error: ${err.message || err}`, "error");
+            }
+        }
+
         /* =====================================================================
          * §11 — TOAST NOTIFICATIONS (preserved from original)
          * ===================================================================*/
