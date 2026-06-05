@@ -37,4 +37,3 @@ Open the terminal , navigate to the folder  `performance_app.py`, and run the fo
 2.  **Sidebar**: Select the specific model weights (`.pth` file) you want to evaluate from the sidebar dropdown.
 3.  **Per-Task Inspector**: Use the dropdown to select different tasks and see how the model and constraints perform on an individual level.
 4.  **Global Analytics**: Switch to the second tab and click the **" Run Full Global Evaluation"** button to compute the Hit Rate and MRR over the 500 tasks and generate the charts. (takes a few minutes)
-a

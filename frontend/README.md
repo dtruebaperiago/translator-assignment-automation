@@ -90,22 +90,13 @@ Click the **↑ upload button** in the Pending Tasks panel. The CSV must have he
 
 ---
 
-## 🔌 Connecting to the Real Backend (Optional)
+## 🔌 Connecting to the Real Backend (Automatic)
 
-The app works fully offline using the local JSON files. To connect it to the FastAPI backend:
-
-1. Start the FastAPI backend (see `Backend/` for instructions).
-2. Open `idisc_hud.html` and change line ~447:
-
-```js
-// Change this:
-const API_BASE = null;
-
-// To this:
-const API_BASE = 'http://localhost:8000/api/v1';
-```
-
-The app will then call the real API endpoints instead of loading local JSON.
+The frontend HUD features **automatic server auto-detection**:
+1. Simply start the FastAPI inference backend (e.g. `python backend/inference_server.py` on port `8000`).
+2. When you refresh or load the dashboard in the browser, the frontend script automatically pings the server.
+3. If detected, it immediately establishes a connection and transitions to **Online Mode** (switching the server status indicator badge in the header from grey "Offline Mode" to green "[MODEL_ID] Active"), pulling real-time recommendations, model configurations, and saving registered translators back to disk.
+4. If the server is offline or unreachable, the dashboard automatically falls back to **Offline Mode**, computing matching scores locally in the browser using the baseline client-side engine.
 
 ---
 

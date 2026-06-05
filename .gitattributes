@@ -1,0 +1,22 @@
+# Normalize line endings for all text files
+* text=auto
+
+# Declare files that should always be treated as text and normalized
+*.py text
+*.html text
+*.css text
+*.js text
+*.json text
+*.md text
+*.csv text
+
+# Denote binary files that should not have their line endings normalized
+*.png binary
+*.jpg binary
+*.mp3 binary
+*.xlsx binary
+*.pdf binary
+*.pkl binary
+*.pth binary
+*.pt binary
+*.pyc binary
