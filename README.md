@@ -21,13 +21,10 @@ The server runs on **http://localhost:8000**, and the frontend will automaticall
 
 ---
 ### 2. Launch the Frontend
-The frontend dashboard works offline by default using pre-built JSON databases.
+The frontend dashboard works offline by default using pre-built JSON databases. A NEW Second terminal
 ```bash
-# 1. Navigate to the frontend folder
-cd frontend
-
-# 2. Start the local server
-python serve.py
+# 1. Start the local server
+python fronted/serve.py
 ```
 This automatically opens your browser to **http://localhost:8080/idisc_hud.html**.
 
